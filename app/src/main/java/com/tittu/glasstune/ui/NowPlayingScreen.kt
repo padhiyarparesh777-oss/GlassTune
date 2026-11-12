@@ -3,6 +3,8 @@ package com.tittu.glasstune.ui
 import android.content.Intent
 import android.media.audiofx.AudioEffect
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.blur
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.media3.common.Player
 import com.tittu.glasstune.data.Song
+import com.tittu.glasstune.service.PlaybackService
 
 private val SilverText = Color(0xFFF3F6F8)
 private val MutedSilver = Color(0xFFCBD3D8)
@@ -61,7 +64,8 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
-    var showEqualizer by remember { mutableStateOf(false) }
+    var showEqualizerUnavailable by remember { mutableStateOf(false) }
+    val equalizerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
     val fg = SilverText
     val cardColor = androidx.compose.ui.graphics.lerp(Color(0xFF4A5862), accent, 0.15f)
 
@@ -97,7 +101,20 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
                         Column(
                             Modifier.width(224.dp).glass(RoundedCornerShape(26.dp)).padding(vertical = 7.dp, horizontal = 6.dp)
                         ) {
-                            PlayerMenuItem(Icons.Rounded.Equalizer, "Equalizer") { menuExpanded = false; showEqualizer = true }
+                            PlayerMenuItem(Icons.Rounded.Equalizer, "Equalizer") {
+                                menuExpanded = false
+                                val sessionId = PlaybackService.audioSessionId
+                                val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
+                                    putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
+                                    putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
+                                    putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
+                                }
+                                if (sessionId > 0 && intent.resolveActivity(context.packageManager) != null) {
+                                    equalizerLauncher.launch(intent)
+                                } else {
+                                    showEqualizerUnavailable = true
+                                }
+                            }
                             PlayerMenuItem(Icons.Rounded.QueueMusic, "Playlist / Queue") { menuExpanded = false; showQueue = true }
                             PlayerMenuItem(Icons.Rounded.Info, "Song info") { menuExpanded = false; showInfo = true }
                             PlayerMenuItem(Icons.Rounded.Share, "Share file") {
@@ -252,30 +269,23 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
         )
     }
 
-    if (showEqualizer) {
+    if (showEqualizerUnavailable) {
         AlertDialog(
-            onDismissRequest = { showEqualizer = false },
+            onDismissRequest = { showEqualizerUnavailable = false },
             containerColor = Color(0xFF66747D),
-            title = { Text("Equalizer", color = fg) },
+            title = { Text("Equalizer unavailable", color = fg) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Open your phone's supported audio effects panel.", color = MutedSilver)
-                    Text("Equalizer availability depends on the device.", color = MutedSilver, fontSize = 11.sp)
-                }
+                Text(
+                    if (PlaybackService.audioSessionId <= 0)
+                        "Audio session is not ready yet. Start playing a song and try again."
+                    else
+                        "This phone does not provide a system equalizer panel for third-party music players.",
+                    color = MutedSilver
+                )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    showEqualizer = false
-                    try {
-                        val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
-                            putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
-                            putExtra(AudioEffect.EXTRA_AUDIO_SESSION, 0)
-                        }
-                        context.startActivity(intent)
-                    } catch (_: Exception) { }
-                }) { Text("Open equalizer", color = fg) }
-            },
-            dismissButton = { TextButton(onClick = { showEqualizer = false }) { Text("Close", color = fg) } }
+                TextButton(onClick = { showEqualizerUnavailable = false }) { Text("OK", color = fg) }
+            }
         )
     }
 }
