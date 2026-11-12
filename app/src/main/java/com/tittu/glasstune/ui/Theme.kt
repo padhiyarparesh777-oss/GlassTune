@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -15,50 +14,55 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 enum class ThemeMode(val label: String) {
-    DARK("Dark Glass"), AMOLED("AMOLED Black"), LIGHT("Light Glass")
+    DARK("Silver Glass"), AMOLED("Deep Silver"), LIGHT("Soft Silver")
 }
 
 val AccentColors = listOf(
-    Color(0xFF7C9CFF), Color(0xFFFF7CC8), Color(0xFF5EEAD4), Color(0xFFFFB86B), Color(0xFFB794F6)
+    Color(0xFFE5EBEF), Color(0xFFD9E1E6), Color(0xFFC8D2D9),
+    Color(0xFFF0F3F5), Color(0xFFB9C6CE)
 )
 
 @Composable
 fun GlassTuneTheme(mode: ThemeMode, accent: Color, content: @Composable () -> Unit) {
-    val scheme = when (mode) {
-        ThemeMode.DARK -> darkColorScheme(
-            primary = accent, onPrimary = Color.Black,
-            background = Color(0xFF0B1020), onBackground = Color.White,
-            surface = Color(0xFF141A2E), onSurface = Color.White
-        )
-        ThemeMode.AMOLED -> darkColorScheme(
-            primary = accent, onPrimary = Color.Black,
-            background = Color.Black, onBackground = Color.White,
-            surface = Color(0xFF0A0A0A), onSurface = Color.White
-        )
-        ThemeMode.LIGHT -> lightColorScheme(
-            primary = accent, onPrimary = Color.White,
-            background = Color(0xFFE9EEFF), onBackground = Color(0xFF111426),
-            surface = Color.White, onSurface = Color(0xFF111426)
-        )
-    }
+    // One unified cool-silver palette keeps every screen visually consistent.
+    val scheme = darkColorScheme(
+        primary = accent,
+        onPrimary = Color(0xFF53616A),
+        secondary = Color(0xFFD7E0E5),
+        onSecondary = Color(0xFF53616A),
+        background = Color(0xFF69767E),
+        onBackground = Color(0xFFF1F4F6),
+        surface = Color(0xFF707D85),
+        onSurface = Color(0xFFF1F4F6),
+        surfaceVariant = Color(0xFF626F77),
+        onSurfaceVariant = Color(0xFFE1E7EA),
+        outline = Color.White.copy(alpha = 0.38f)
+    )
     MaterialTheme(colorScheme = scheme, content = content)
 }
 
 @Composable
 fun GlassBackground(accent: Color, content: @Composable BoxScope.() -> Unit) {
-    val bg = MaterialTheme.colorScheme.background
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg)
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFF7B878F), Color(0xFF68757D), Color(0xFF59666E))
+                )
+            )
             .drawBehind {
-                if (bg != Color.Black) {
-                    val c1 = Offset(size.width * 0.15f, size.height * 0.12f)
-                    val c2 = Offset(size.width * 0.9f, size.height * 0.85f)
-                    val r = size.width * 0.9f
-                    drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = 0.35f), Color.Transparent), center = c1, radius = r), radius = r, center = c1)
-                    drawCircle(Brush.radialGradient(listOf(Color(0xFF8A5CFF).copy(alpha = 0.28f), Color.Transparent), center = c2, radius = r), radius = r, center = c2)
-                }
+                val r = size.width * 0.95f
+                val c1 = Offset(size.width * 0.10f, size.height * 0.08f)
+                val c2 = Offset(size.width * 0.92f, size.height * 0.88f)
+                drawCircle(
+                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent), center = c1, radius = r),
+                    radius = r, center = c1
+                )
+                drawCircle(
+                    Brush.radialGradient(listOf(Color(0xFF35434B).copy(alpha = 0.20f), Color.Transparent), center = c2, radius = r),
+                    radius = r, center = c2
+                )
             },
         content = content
     )
