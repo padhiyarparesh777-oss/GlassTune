@@ -14,6 +14,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -70,18 +72,24 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     }
                 )
             } else {
-                LibraryScreen(vm, accent, Modifier.fillMaxSize())
-                if (vm.currentSong != null) {
-                    MiniPlayer(vm, accent, onClick = { showNow = true }, modifier = Modifier.align(Alignment.BottomCenter))
+                val playerVisible = showNow && vm.currentSong != null
+                Box(Modifier.fillMaxSize().then(if (playerVisible) Modifier.blur(18.dp) else Modifier)) {
+                    LibraryScreen(vm, accent, Modifier.fillMaxSize())
+                    if (vm.currentSong != null) {
+                        MiniPlayer(vm, accent, onClick = { showNow = true }, modifier = Modifier.align(Alignment.BottomCenter))
+                    }
+                }
+                if (playerVisible) {
+                    androidx.compose.foundation.layout.Box(
+                        Modifier.fillMaxSize().background(Color(0xFF1D2730).copy(alpha = 0.46f))
+                    )
                 }
                 AnimatedVisibility(
                     visible = showNow && vm.currentSong != null,
-                    enter = slideInVertically { it } + fadeIn(),
-                    exit = slideOutVertically { it } + fadeOut()
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    GlassTuneTheme(ThemeMode.DARK, accent) {
-                        NowPlayingScreen(vm, accent, onClose = { showNow = false })
-                    }
+                    NowPlayingScreen(vm, accent, onClose = { showNow = false })
                 }
             }
         }
