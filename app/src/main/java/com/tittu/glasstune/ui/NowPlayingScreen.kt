@@ -123,10 +123,10 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
 
             Spacer(Modifier.height(14.dp))
 
-            // Large album-art window: deliberately black when no artwork exists, like the reference.
+            // Album-art window uses translucent glass instead of a hard black inset.
             Box(
                 Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(26.dp))
-                    .background(Color(0xFF1C252B)).glass(RoundedCornerShape(26.dp)).padding(7.dp),
+                    .background(Color.White.copy(alpha = 0.07f)).glass(RoundedCornerShape(26.dp)).padding(7.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (song != null) {
@@ -137,8 +137,8 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(19.dp))
                     )
                 } else {
-                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(19.dp)).background(Color.Black), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.MusicNote, null, tint = Color(0xFF65727A), modifier = Modifier.size(72.dp))
+                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(19.dp)).background(Color.White.copy(alpha = 0.045f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.MusicNote, null, tint = Color.White.copy(alpha = 0.42f), modifier = Modifier.size(72.dp))
                     }
                 }
             }
