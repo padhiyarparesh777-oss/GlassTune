@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -105,16 +106,20 @@ private fun PermissionScreen(denied: Boolean, accent: Color, onAllow: () -> Unit
                 color = onBg.copy(alpha = 0.75f), textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(24.dp))
+            val allowInteraction = remember { MutableInteractionSource() }
             Button(
                 onClick = onAllow,
-                modifier = Modifier.glass(RoundedCornerShape(20.dp)),
+                interactionSource = allowInteraction,
+                modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(allowInteraction),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.16f), contentColor = Color.White)
             ) { Text("Allow access") }
             if (denied) {
                 Spacer(Modifier.height(8.dp))
+                val settingsInteraction = remember { MutableInteractionSource() }
                 Button(
                     onClick = onSettings,
-                    modifier = Modifier.glass(RoundedCornerShape(20.dp)),
+                    interactionSource = settingsInteraction,
+                    modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(settingsInteraction),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f), contentColor = onBg)
                 ) { Text("Open app settings") }
             }
