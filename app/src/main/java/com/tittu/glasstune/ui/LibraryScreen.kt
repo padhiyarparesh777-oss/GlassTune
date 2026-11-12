@@ -2,6 +2,10 @@ package com.tittu.glasstune.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -25,6 +29,7 @@ import com.tittu.glasstune.data.Song
 @Composable
 fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifier) {
     var tab by remember { mutableIntStateOf(0) }
+    var showThemes by remember { mutableStateOf(false) }
     val songs = vm.filteredSongs()
     val shown = when (tab) {
         1 -> songs.filter { it.id in vm.favorites }
@@ -39,9 +44,9 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
             }
             GlassIconButton(Icons.Rounded.Refresh, "Refresh", vm::loadLibrary, size = 42.dp)
             Spacer(Modifier.width(8.dp))
-            GlassIconButton(Icons.Rounded.Palette, "Accent", vm::cycleAccent, size = 42.dp)
+            GlassIconButton(Icons.Rounded.Palette, "Colors", { showThemes = true }, size = 42.dp)
             Spacer(Modifier.width(8.dp))
-            GlassIconButton(Icons.Rounded.Brightness6, "Theme", vm::cycleTheme, size = 42.dp)
+            GlassIconButton(Icons.Rounded.Brightness6, "Theme", { showThemes = true }, size = 42.dp)
         }
         TextField(
             value = vm.query, onValueChange = { vm.query = it }, singleLine = true,
@@ -98,6 +103,35 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
                 }
             }
         }
+    }
+    if (showThemes) {
+        AlertDialog(
+            onDismissRequest = { showThemes = false },
+            shape = RoundedCornerShape(32.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Water Glass Themes", color = MaterialTheme.colorScheme.onSurface) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Choose your bubble-glass color", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AccentNames.forEachIndexed { index, name ->
+                        Row(
+                            Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp))
+                                .rubberClickable { vm.setAccent(index); showThemes = false }.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                Modifier.size(30.dp).background(AccentColors[index], CircleShape)
+                                    .border(2.dp, Color.White.copy(alpha = .65f), CircleShape)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(name, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
+                            if (vm.accentIndex == index) Icon(Icons.Rounded.CheckCircle, "Selected", tint = Color.White)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showThemes = false }) { Text("Close", color = MaterialTheme.colorScheme.onSurface) } }
+        )
     }
 }
 
