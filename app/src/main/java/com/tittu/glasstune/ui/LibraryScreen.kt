@@ -1,7 +1,7 @@
 package com.tittu.glasstune.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -55,9 +55,11 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
         )
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Songs", "Favorites", "Recent").forEachIndexed { i, label ->
+                val chipInteraction = remember(i) { MutableInteractionSource() }
                 FilterChip(
                     selected = tab == i, onClick = { tab = i },
-                    modifier = Modifier.glass(RoundedCornerShape(18.dp)),
+                    interactionSource = chipInteraction,
+                    modifier = Modifier.glass(RoundedCornerShape(18.dp)).rubberPress(chipInteraction),
                     label = { Text(label) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White.copy(alpha = .24f),
@@ -67,7 +69,8 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
                     )
                 )
             }
-            TextButton(onClick = vm::cycleSort, modifier = Modifier.glass(RoundedCornerShape(18.dp))) {
+            val sortInteraction = remember { MutableInteractionSource() }
+            TextButton(onClick = vm::cycleSort, interactionSource = sortInteraction, modifier = Modifier.glass(RoundedCornerShape(18.dp)).rubberPress(sortInteraction)) {
                 Text(vm.sort.label, color = MaterialTheme.colorScheme.onBackground)
             }
         }
@@ -78,17 +81,19 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
             }
             else -> LazyColumn(contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 140.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 itemsIndexed(shown, key = { _, s -> s.id }) { index, song ->
-                    Row(Modifier.fillMaxWidth().glass().clickable { vm.play(shown, index) }.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().glass().rubberClickable { vm.play(shown, index) }.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                         ArtBox(song, Modifier.size(52.dp))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(song.title, color = if (vm.currentSong?.id == song.id) accent else MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
                             Text(song.artist + " • " + formatTime(song.durationMs), color = MaterialTheme.colorScheme.onBackground.copy(alpha = .65f), fontSize = 12.sp)
                         }
-                        IconButton(onClick = { vm.toggleFavorite(song.id) }) {
+                        val favoriteInteraction = remember(song.id) { MutableInteractionSource() }
+                        IconButton(onClick = { vm.toggleFavorite(song.id) }, interactionSource = favoriteInteraction, modifier = Modifier.rubberPress(favoriteInteraction)) {
                             Icon(if (song.id in vm.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Favorite", tint = accent)
                         }
-                        IconButton(onClick = { vm.playNext(song) }) { Icon(Icons.Rounded.PlaylistAdd, "Play next") }
+                        val nextInteraction = remember(song.id) { MutableInteractionSource() }
+                        IconButton(onClick = { vm.playNext(song) }, interactionSource = nextInteraction, modifier = Modifier.rubberPress(nextInteraction)) { Icon(Icons.Rounded.PlaylistAdd, "Play next") }
                     }
                 }
             }
