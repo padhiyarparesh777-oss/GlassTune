@@ -37,9 +37,11 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
                 Text("Your music", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .7f))
                 Text("GlassTune", color = MaterialTheme.colorScheme.onBackground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             }
-            IconButton(onClick = vm::loadLibrary) { Icon(Icons.Rounded.Refresh, "Refresh") }
-            IconButton(onClick = vm::cycleAccent) { Icon(Icons.Rounded.Palette, "Accent", tint = accent) }
-            IconButton(onClick = vm::cycleTheme) { Icon(Icons.Rounded.Brightness6, "Theme") }
+            GlassIconButton(Icons.Rounded.Refresh, "Refresh", vm::loadLibrary, size = 42.dp)
+            Spacer(Modifier.width(8.dp))
+            GlassIconButton(Icons.Rounded.Palette, "Accent", vm::cycleAccent, size = 42.dp)
+            Spacer(Modifier.width(8.dp))
+            GlassIconButton(Icons.Rounded.Brightness6, "Theme", vm::cycleTheme, size = 42.dp)
         }
         TextField(
             value = vm.query, onValueChange = { vm.query = it }, singleLine = true,
@@ -53,9 +55,21 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
         )
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Songs", "Favorites", "Recent").forEachIndexed { i, label ->
-                FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(label) })
+                FilterChip(
+                    selected = tab == i, onClick = { tab = i },
+                    modifier = Modifier.glass(RoundedCornerShape(18.dp)),
+                    label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color.White.copy(alpha = .24f),
+                        containerColor = Color.White.copy(alpha = .08f),
+                        selectedLabelColor = Color.White,
+                        labelColor = MaterialTheme.colorScheme.onBackground
+                    )
+                )
             }
-            TextButton(onClick = vm::cycleSort) { Text(vm.sort.label) }
+            TextButton(onClick = vm::cycleSort, modifier = Modifier.glass(RoundedCornerShape(18.dp))) {
+                Text(vm.sort.label, color = MaterialTheme.colorScheme.onBackground)
+            }
         }
         when {
             vm.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = accent) }

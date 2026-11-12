@@ -107,13 +107,15 @@ private fun PermissionScreen(denied: Boolean, accent: Color, onAllow: () -> Unit
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = onAllow,
-                colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
+                modifier = Modifier.glass(RoundedCornerShape(20.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.16f), contentColor = Color.White)
             ) { Text("Allow access") }
             if (denied) {
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = onSettings,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.15f), contentColor = onBg)
+                    modifier = Modifier.glass(RoundedCornerShape(20.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f), contentColor = onBg)
                 ) { Text("Open app settings") }
             }
         }

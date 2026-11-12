@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -21,17 +24,28 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** Frosted-glass surface: translucent gradient fill + soft white border. */
+/** Raised satin-glass / neumorphic surface used throughout the app. */
 @Composable
 fun Modifier.glass(shape: Shape = RoundedCornerShape(22.dp)): Modifier {
-    val light = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    val top = if (light) 0.65f else 0.16f
-    val bottom = if (light) 0.35f else 0.05f
-    val edge = if (light) 0.9f else 0.45f
+    val base = MaterialTheme.colorScheme.background
+    val light = base.luminance() > 0.5f
+    val topHighlight = if (light) Color.White.copy(alpha = 0.58f) else Color.White.copy(alpha = 0.20f)
+    val lowerShade = if (light) Color(0xFF89969E).copy(alpha = 0.10f) else Color(0xFF26323A).copy(alpha = 0.28f)
+    val edgeLight = if (light) Color.White.copy(alpha = 0.92f) else Color.White.copy(alpha = 0.48f)
+    val edgeDark = if (light) Color(0xFF71808A).copy(alpha = 0.28f) else Color(0xFF26323A).copy(alpha = 0.72f)
+
     return this
+        .shadow(13.dp, shape, clip = false, ambientColor = Color(0xFF26323A).copy(alpha = 0.30f), spotColor = Color.White.copy(alpha = 0.32f))
         .clip(shape)
-        .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = top), Color.White.copy(alpha = bottom))), shape)
-        .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = edge), Color.White.copy(alpha = 0.06f))), shape)
+        .background(
+            Brush.linearGradient(
+                colors = listOf(topHighlight, base.copy(alpha = 0.78f), lowerShade),
+                start = androidx.compose.ui.geometry.Offset.Zero,
+                end = androidx.compose.ui.geometry.Offset(900f, 900f)
+            ),
+            shape
+        )
+        .border(1.dp, Brush.linearGradient(listOf(edgeLight, edgeDark, edgeLight)), shape)
 }
 
 @Composable
