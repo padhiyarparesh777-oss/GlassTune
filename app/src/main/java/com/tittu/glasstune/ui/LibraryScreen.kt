@@ -58,27 +58,15 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
                 focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
             )
         )
-        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             listOf("Songs", "Favorites", "Recent").forEachIndexed { i, label ->
-                val chipInteraction = remember(i) { MutableInteractionSource() }
-                FilterChip(
-                    selected = tab == i, onClick = { tab = i },
-                    interactionSource = chipInteraction,
-                    modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(chipInteraction),
-                    shape = RoundedCornerShape(20.dp),
-                    label = { Text(label) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color.White.copy(alpha = .24f),
-                        containerColor = Color.White.copy(alpha = .08f),
-                        selectedLabelColor = Color.White,
-                        labelColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
+                LibraryTab(label, selected = tab == i, modifier = Modifier.weight(if (i == 1) 1.28f else 1f)) { tab = i }
             }
-            val sortInteraction = remember { MutableInteractionSource() }
-            TextButton(onClick = vm::cycleSort, interactionSource = sortInteraction, modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(sortInteraction)) {
-                Text(vm.sort.label, color = MaterialTheme.colorScheme.onBackground)
-            }
+            LibraryTab(vm.sort.label, selected = false, modifier = Modifier.weight(0.92f), compact = true) { vm.cycleSort() }
         }
         when {
             vm.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = accent) }
@@ -132,6 +120,29 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
                 }
             },
             confirmButton = { TextButton(onClick = { showThemes = false }) { Text("Close", color = MaterialTheme.colorScheme.onSurface) } }
+        )
+    }
+}
+
+@Composable
+private fun LibraryTab(label: String, selected: Boolean, modifier: Modifier = Modifier, compact: Boolean = false, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(24.dp)
+    val interaction = remember { MutableInteractionSource() }
+    Box(
+        modifier.height(54.dp)
+            .clip(shape)
+            .background(if (selected) Color.White.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.075f), shape)
+            .border(1.dp, Color.White.copy(alpha = if (selected) 0.62f else 0.28f), shape)
+            .rubberPress(interaction)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = if (compact) 13.sp else 15.sp,
+            maxLines = 1,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
         )
     }
 }
