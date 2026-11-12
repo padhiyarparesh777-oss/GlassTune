@@ -17,24 +17,28 @@ enum class ThemeMode(val label: String) {
     DARK("Silver Glass"), AMOLED("Deep Silver"), LIGHT("Soft Silver")
 }
 
+val AccentNames = listOf("Silver Mist", "Ocean Blue", "Rose Quartz", "Lavender", "Mint Aqua", "Midnight")
+
 val AccentColors = listOf(
-    Color(0xFFE5EBEF), Color(0xFFD9E1E6), Color(0xFFC8D2D9),
-    Color(0xFFF0F3F5), Color(0xFFB9C6CE)
+    Color(0xFFE5EBEF), Color(0xFF7FA8C9), Color(0xFFCC96AE),
+    Color(0xFFA99BCC), Color(0xFF87B8AD), Color(0xFF7886AD)
 )
 
 @Composable
 fun GlassTuneTheme(mode: ThemeMode, accent: Color, content: @Composable () -> Unit) {
-    // One unified cool-silver palette keeps every screen visually consistent.
+    val base = Color(0xFF69767E)
+    val tintedBase = androidx.compose.ui.graphics.lerp(base, accent, 0.28f)
+    // Each palette keeps the same frosted-silver surface and changes its tint.
     val scheme = darkColorScheme(
         primary = accent,
         onPrimary = Color(0xFF53616A),
         secondary = Color(0xFFD7E0E5),
         onSecondary = Color(0xFF53616A),
-        background = Color(0xFF69767E),
+        background = tintedBase,
         onBackground = Color(0xFFF1F4F6),
-        surface = Color(0xFF707D85),
+        surface = androidx.compose.ui.graphics.lerp(Color(0xFF707D85), accent, 0.22f),
         onSurface = Color(0xFFF1F4F6),
-        surfaceVariant = Color(0xFF626F77),
+        surfaceVariant = androidx.compose.ui.graphics.lerp(Color(0xFF626F77), accent, 0.20f),
         onSurfaceVariant = Color(0xFFE1E7EA),
         outline = Color.White.copy(alpha = 0.38f)
     )
@@ -48,7 +52,11 @@ fun GlassBackground(accent: Color, content: @Composable BoxScope.() -> Unit) {
             .fillMaxSize()
             .background(
                 Brush.linearGradient(
-                    listOf(Color(0xFF7B878F), Color(0xFF68757D), Color(0xFF59666E))
+                    listOf(
+                        androidx.compose.ui.graphics.lerp(Color(0xFF7B878F), accent, 0.33f),
+                        androidx.compose.ui.graphics.lerp(Color(0xFF68757D), accent, 0.25f),
+                        androidx.compose.ui.graphics.lerp(Color(0xFF59666E), accent, 0.20f)
+                    )
                 )
             )
             .drawBehind {
