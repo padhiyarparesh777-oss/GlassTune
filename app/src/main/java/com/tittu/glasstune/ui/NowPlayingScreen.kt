@@ -4,6 +4,8 @@ import android.content.Intent
 import android.media.audiofx.AudioEffect
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -61,19 +63,25 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
     var showInfo by remember { mutableStateOf(false) }
     var showEqualizer by remember { mutableStateOf(false) }
     val fg = SilverText
+    val cardColor = androidx.compose.ui.graphics.lerp(Color(0xFF4A5862), accent, 0.15f)
 
     BoxWithConstraints(
-        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp),
+        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
-        val cardWidth = minOf(maxWidth, 430.dp)
+        val cardWidth = minOf(maxWidth, 370.dp)
         Column(
-            Modifier.width(cardWidth).fillMaxHeight(0.96f)
-                .glass(RoundedCornerShape(34.dp)).padding(horizontal = 20.dp, vertical = 18.dp),
+            Modifier.width(cardWidth).fillMaxHeight(0.78f)
+                .clip(RoundedCornerShape(36.dp))
+                .background(cardColor)
+                .glass(RoundedCornerShape(36.dp))
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top identity row, matching the reference player's compact proportions.
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                GlassIconButton(Icons.Rounded.KeyboardArrowDown, "Close player", onClose, size = 38.dp)
+                Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Tittu", color = fg, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                     Text("NOW PLAYING", color = MutedSilver, fontSize = 9.sp, letterSpacing = 2.sp)
@@ -83,7 +91,8 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
                     DropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
-                        modifier = Modifier.width(224.dp).glass(RoundedCornerShape(22.dp))
+                        modifier = Modifier.width(224.dp).clip(RoundedCornerShape(26.dp))
+                            .background(cardColor).glass(RoundedCornerShape(26.dp))
                     ) {
                         PlayerMenuItem(Icons.Rounded.Equalizer, "Equalizer") { menuExpanded = false; showEqualizer = true }
                         PlayerMenuItem(Icons.Rounded.QueueMusic, "Playlist / Queue") { menuExpanded = false; showQueue = true }
@@ -116,7 +125,8 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
 
             // Large album-art window: deliberately black when no artwork exists, like the reference.
             Box(
-                Modifier.fillMaxWidth().weight(1f).glass(RoundedCornerShape(25.dp)).padding(7.dp),
+                Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(26.dp))
+                    .background(Color(0xFF1C252B)).glass(RoundedCornerShape(26.dp)).padding(7.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (song != null) {
@@ -193,7 +203,8 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
     if (showQueue) {
         AlertDialog(
             onDismissRequest = { showQueue = false },
-            containerColor = Color(0xFF66747D),
+            containerColor = cardColor,
+            shape = RoundedCornerShape(30.dp),
             title = { Text("Playlist / Queue", color = fg) },
             text = {
                 if (vm.queue.isEmpty()) Text("Queue is empty", color = MutedSilver)
@@ -271,7 +282,7 @@ private fun PlayerMenuItem(icon: androidx.compose.ui.graphics.vector.ImageVector
         text = { Text(label, color = SilverText, fontSize = 13.sp) },
         leadingIcon = { Icon(icon, null, tint = MutedSilver, modifier = Modifier.size(19.dp)) },
         onClick = onClick,
-        modifier = Modifier.rubberClickable(onClick)
+        modifier = Modifier
     )
 }
 
