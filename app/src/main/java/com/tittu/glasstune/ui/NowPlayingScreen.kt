@@ -1,7 +1,7 @@
 package com.tittu.glasstune.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,7 +28,7 @@ fun MiniPlayer(vm: MusicViewModel, accent: Color, onClick: () -> Unit, modifier:
     val song = vm.currentSong ?: return
     Row(
         modifier.navigationBarsPadding().padding(14.dp).fillMaxWidth()
-            .glass(RoundedCornerShape(24.dp)).clickable(onClick = onClick).padding(8.dp),
+            .glass(RoundedCornerShape(24.dp)).rubberClickable(onClick).padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         ArtBox(song, Modifier.size(44.dp))
@@ -66,7 +66,7 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
                     val q = vm.queue[i]
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = 4.dp).glass(RoundedCornerShape(16.dp))
-                            .clickable { vm.skipTo(i) }.padding(12.dp),
+                            .rubberClickable { vm.skipTo(i) }.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(Modifier.weight(1f)) {
@@ -116,7 +116,7 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
             GlassIconButton(Icons.Rounded.Shuffle, "Shuffle", vm::toggleShuffle, size = 44.dp, tint = if (vm.shuffle) Color.White else fg)
             GlassIconButton(Icons.Rounded.SkipPrevious, "Previous", vm::previous, size = 52.dp)
             Box(
-                Modifier.size(72.dp).glass(CircleShape).clickable { vm.playPause() },
+                Modifier.size(72.dp).glass(CircleShape).rubberClickable { vm.playPause() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(if (vm.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, "Play/Pause", tint = Color.White, modifier = Modifier.size(40.dp))
@@ -130,8 +130,10 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = vm::cycleSleepTimer) { Text(if (vm.sleepMinutes == 0) "Sleep timer" else "${vm.sleepMinutes}m", color = fg) }
-            TextButton(onClick = vm::cycleSpeed) { Text("${vm.speed}x", color = fg) }
+            val sleepInteraction = remember { MutableInteractionSource() }
+            TextButton(onClick = vm::cycleSleepTimer, interactionSource = sleepInteraction, modifier = Modifier.rubberPress(sleepInteraction)) { Text(if (vm.sleepMinutes == 0) "Sleep timer" else "${vm.sleepMinutes}m", color = fg) }
+            val speedInteraction = remember { MutableInteractionSource() }
+            TextButton(onClick = vm::cycleSpeed, interactionSource = speedInteraction, modifier = Modifier.rubberPress(speedInteraction)) { Text("${vm.speed}x", color = fg) }
             GlassIconButton(
                 if (song != null && song.id in vm.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                 "Favorite", { song?.let { vm.toggleFavorite(it.id) } }, size = 42.dp
