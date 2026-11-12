@@ -1,0 +1,91 @@
+package com.tittu.glasstune.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.tittu.glasstune.data.Song
+
+@Composable
+fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifier) {
+    var tab by remember { mutableIntStateOf(0) }
+    val songs = vm.filteredSongs()
+    val shown = when (tab) {
+        1 -> songs.filter { it.id in vm.favorites }
+        2 -> songs.sortedByDescending { it.dateAdded }.take(50)
+        else -> songs
+    }
+    Column(modifier.fillMaxSize().statusBarsPadding()) {
+        Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Your music", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .7f))
+                Text("GlassTune", color = MaterialTheme.colorScheme.onBackground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            }
+            IconButton(onClick = vm::loadLibrary) { Icon(Icons.Rounded.Refresh, "Refresh") }
+            IconButton(onClick = vm::cycleAccent) { Icon(Icons.Rounded.Palette, "Accent", tint = accent) }
+            IconButton(onClick = vm::cycleTheme) { Icon(Icons.Rounded.Brightness6, "Theme") }
+        }
+        TextField(
+            value = vm.query, onValueChange = { vm.query = it }, singleLine = true,
+            placeholder = { Text("Search songs, artists, albums") },
+            leadingIcon = { Icon(Icons.Rounded.Search, null) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).glass(RoundedCornerShape(24.dp)),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
+            )
+        )
+        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Songs", "Favorites", "Recent").forEachIndexed { i, label ->
+                FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(label) })
+            }
+            TextButton(onClick = vm::cycleSort) { Text(vm.sort.label) }
+        }
+        when {
+            vm.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = accent) }
+            shown.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(if (vm.songs.isEmpty()) "No music found. Add audio files and refresh." else "Nothing here yet.", color = MaterialTheme.colorScheme.onBackground)
+            }
+            else -> LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp, bottom = 140.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                itemsIndexed(shown, key = { _, s -> s.id }) { index, song ->
+                    Row(Modifier.fillMaxWidth().glass().clickable { vm.play(shown, index) }.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        ArtBox(song, Modifier.size(52.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(song.title, color = if (vm.currentSong?.id == song.id) accent else MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+                            Text(song.artist + " • " + formatTime(song.durationMs), color = MaterialTheme.colorScheme.onBackground.copy(alpha = .65f), fontSize = 12.sp)
+                        }
+                        IconButton(onClick = { vm.toggleFavorite(song.id) }) {
+                            Icon(if (song.id in vm.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Favorite", tint = accent)
+                        }
+                        IconButton(onClick = { vm.playNext(song) }) { Icon(Icons.Rounded.PlaylistAdd, "Play next") }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ArtBox(song: Song, modifier: Modifier) {
+    Box(modifier.clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
+        Icon(Icons.Rounded.MusicNote, null, tint = MaterialTheme.colorScheme.onBackground.copy(alpha = .5f))
+        AsyncImage(model = song.artUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+    }
+}
