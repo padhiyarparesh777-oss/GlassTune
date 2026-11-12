@@ -23,8 +23,8 @@ import java.io.File
 private enum class SettingsPage { HOME, APPEARANCE, PLAYBACK, LIBRARY, NOTIFICATIONS, PRIVACY, ABOUT, EQUALIZER, SLEEP, STORAGE }
 
 @Composable
-fun GlassTuneSettings(vm: MusicViewModel, onClose: () -> Unit) {
-    var page by remember { mutableStateOf(SettingsPage.HOME) }
+fun GlassTuneSettings(vm: MusicViewModel, onClose: () -> Unit, startPage: String = "HOME") {
+    var page by remember { mutableStateOf(runCatching { SettingsPage.valueOf(startPage) }.getOrDefault(SettingsPage.HOME)) }
     BackHandler(page != SettingsPage.HOME) { page = SettingsPage.HOME }
     BackHandler(page == SettingsPage.HOME) { onClose() }
     val context = LocalContext.current
