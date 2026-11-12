@@ -27,7 +27,7 @@ import coil.compose.AsyncImage
 import com.tittu.glasstune.data.Song
 
 @Composable
-fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifier) {
+fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifier, onSettings: () -> Unit = {}) {
     var tab by remember { mutableIntStateOf(0) }
     var showThemes by remember { mutableStateOf(false) }
     val songs = vm.filteredSongs()
@@ -46,7 +46,7 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
             Spacer(Modifier.width(8.dp))
             GlassIconButton(Icons.Rounded.Palette, "Colors", { showThemes = true }, size = 42.dp)
             Spacer(Modifier.width(8.dp))
-            GlassIconButton(Icons.Rounded.Brightness6, "Theme", { showThemes = true }, size = 42.dp)
+            GlassIconButton(Icons.Rounded.Settings, "Settings", onSettings, size = 42.dp)
         }
         TextField(
             value = vm.query, onValueChange = { vm.query = it }, singleLine = true,
