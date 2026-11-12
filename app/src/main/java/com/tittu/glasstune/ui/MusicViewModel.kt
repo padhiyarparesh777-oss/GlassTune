@@ -155,6 +155,11 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit().putInt("theme", themeMode.ordinal).apply()
     }
 
+    fun setAccent(index: Int) {
+        accentIndex = index.coerceIn(0, AccentColors.lastIndex)
+        prefs.edit().putInt("accent", accentIndex).apply()
+    }
+
     fun cycleAccent() {
         accentIndex = (accentIndex + 1) % AccentColors.size
         prefs.edit().putInt("accent", accentIndex).apply()
