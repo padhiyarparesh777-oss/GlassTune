@@ -87,35 +87,39 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
                     Text("NOW PLAYING", color = MutedSilver, fontSize = 9.sp, letterSpacing = 2.sp)
                 }
                 Box {
-                    GlassIconButton(Icons.Rounded.MoreVert, "More options", { menuExpanded = true }, size = 42.dp)
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                        modifier = Modifier.width(224.dp).clip(RoundedCornerShape(26.dp))
-                            .background(cardColor).glass(RoundedCornerShape(26.dp))
+                    GlassIconButton(Icons.Rounded.MoreVert, "More options", { menuExpanded = !menuExpanded }, size = 42.dp)
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = menuExpanded,
+                        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(initialScale = 0.94f),
+                        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.scaleOut(targetScale = 0.96f),
+                        modifier = Modifier.align(Alignment.TopEnd).offset(y = 50.dp)
                     ) {
-                        PlayerMenuItem(Icons.Rounded.Equalizer, "Equalizer") { menuExpanded = false; showEqualizer = true }
-                        PlayerMenuItem(Icons.Rounded.QueueMusic, "Playlist / Queue") { menuExpanded = false; showQueue = true }
-                        PlayerMenuItem(Icons.Rounded.Info, "Song info") { menuExpanded = false; showInfo = true }
-                        PlayerMenuItem(Icons.Rounded.Share, "Share file") {
-                            menuExpanded = false
-                            song?.let {
-                                val share = Intent(Intent.ACTION_SEND).apply {
-                                    type = "audio/*"
-                                    putExtra(Intent.EXTRA_STREAM, it.uri)
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                                context.startActivity(Intent.createChooser(share, "Share song"))
-                            }
-                        }
-                        PlayerMenuItem(Icons.Rounded.Bedtime, if (vm.sleepMinutes == 0) "Sleep timer" else "Sleep timer · ${vm.sleepMinutes}m") {
-                            menuExpanded = false; vm.cycleSleepTimer()
-                        }
-                        PlayerMenuItem(
-                            if (song != null && song.id in vm.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                            if (song != null && song.id in vm.favorites) "Remove favorite" else "Add to favorite"
+                        Column(
+                            Modifier.width(224.dp).glass(RoundedCornerShape(26.dp)).padding(vertical = 7.dp, horizontal = 6.dp)
                         ) {
-                            menuExpanded = false; song?.let { vm.toggleFavorite(it.id) }
+                            PlayerMenuItem(Icons.Rounded.Equalizer, "Equalizer") { menuExpanded = false; showEqualizer = true }
+                            PlayerMenuItem(Icons.Rounded.QueueMusic, "Playlist / Queue") { menuExpanded = false; showQueue = true }
+                            PlayerMenuItem(Icons.Rounded.Info, "Song info") { menuExpanded = false; showInfo = true }
+                            PlayerMenuItem(Icons.Rounded.Share, "Share file") {
+                                menuExpanded = false
+                                song?.let {
+                                    val share = Intent(Intent.ACTION_SEND).apply {
+                                        type = "audio/*"
+                                        putExtra(Intent.EXTRA_STREAM, it.uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(share, "Share song"))
+                                }
+                            }
+                            PlayerMenuItem(Icons.Rounded.Bedtime, if (vm.sleepMinutes == 0) "Sleep timer" else "Sleep timer · ${vm.sleepMinutes}m") {
+                                menuExpanded = false; vm.cycleSleepTimer()
+                            }
+                            PlayerMenuItem(
+                                if (song != null && song.id in vm.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                                if (song != null && song.id in vm.favorites) "Remove favorite" else "Add to favorite"
+                            ) {
+                                menuExpanded = false; song?.let { vm.toggleFavorite(it.id) }
+                            }
                         }
                     }
                 }
@@ -278,12 +282,15 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
 
 @Composable
 private fun PlayerMenuItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    DropdownMenuItem(
-        text = { Text(label, color = SilverText, fontSize = 13.sp) },
-        leadingIcon = { Icon(icon, null, tint = MutedSilver, modifier = Modifier.size(19.dp)) },
-        onClick = onClick,
-        modifier = Modifier
-    )
+    Row(
+        Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick).padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = MutedSilver, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(18.dp))
+        Text(label, color = SilverText, fontSize = 13.sp)
+    }
 }
 
 @Composable
