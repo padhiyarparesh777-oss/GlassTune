@@ -1,9 +1,9 @@
 package com.tittu.glasstune.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,15 +25,20 @@ import androidx.media3.common.Player
 @Composable
 fun MiniPlayer(vm: MusicViewModel, accent: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val song = vm.currentSong ?: return
-    Row(modifier.navigationBarsPadding().padding(14.dp).fillMaxWidth().glass(RoundedCornerShape(24.dp)).clickable(onClick = onClick).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier.navigationBarsPadding().padding(14.dp).fillMaxWidth()
+            .glass(RoundedCornerShape(24.dp)).clickable(onClick = onClick).padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         ArtBox(song, Modifier.size(44.dp))
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(song.title, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-            Text(song.artist, color = MaterialTheme.colorScheme.onBackground.copy(alpha = .65f), fontSize = 12.sp)
+            Text(song.artist, color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 12.sp)
         }
-        IconButton(onClick = vm::playPause) { Icon(if (vm.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, "Play/Pause", tint = accent) }
-        IconButton(onClick = vm::next) { Icon(Icons.Rounded.SkipNext, "Next") }
+        GlassIconButton(Icons.Rounded.PlayArrow.takeIf { !vm.isPlaying } ?: Icons.Rounded.Pause, "Play/Pause", vm::playPause, size = 42.dp)
+        Spacer(Modifier.width(6.dp))
+        GlassIconButton(Icons.Rounded.SkipNext, "Next", vm::next, size = 42.dp)
     }
 }
 
@@ -41,55 +46,95 @@ fun MiniPlayer(vm: MusicViewModel, accent: Color, onClick: () -> Unit, modifier:
 fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
     val song = vm.currentSong
+    val fg = MaterialTheme.colorScheme.onBackground
     var showQueue by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().background(Color(0xFF0B1020)).statusBarsPadding().navigationBarsPadding().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+
+    Column(
+        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onClose) { Icon(Icons.Rounded.KeyboardArrowDown, "Close", tint = Color.White) }
-            Text("Now Playing", color = Color.White, modifier = Modifier.weight(1f))
-            IconButton(onClick = { showQueue = !showQueue }) { Icon(Icons.Rounded.QueueMusic, "Queue", tint = Color.White) }
+            GlassIconButton(Icons.Rounded.KeyboardArrowDown, "Close", onClose, size = 42.dp)
+            Text("Now Playing", color = fg, modifier = Modifier.weight(1f).padding(start = 14.dp), fontWeight = FontWeight.SemiBold)
+            GlassIconButton(Icons.Rounded.QueueMusic, "Queue", { showQueue = !showQueue }, size = 42.dp)
         }
+        Spacer(Modifier.height(18.dp))
         if (showQueue) {
-            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).fillMaxWidth().glass()) {
+            LazyColumn(Modifier.weight(1f).fillMaxWidth().glass(RoundedCornerShape(26.dp)).padding(8.dp)) {
                 items(vm.queue.size) { i ->
                     val q = vm.queue[i]
-                    Row(Modifier.fillMaxWidth().clickable { vm.skipTo(i) }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp).glass(RoundedCornerShape(16.dp))
+                            .clickable { vm.skipTo(i) }.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Column(Modifier.weight(1f)) {
-                            Text(q.title, color = Color.White)
-                            Text(q.artist, color = Color.White.copy(alpha = .6f), fontSize = 12.sp)
+                            Text(q.title, color = fg)
+                            Text(q.artist, color = fg.copy(alpha = .65f), fontSize = 12.sp)
                         }
-                        IconButton(onClick = { vm.removeFromQueue(i) }) { Icon(Icons.Rounded.Close, "Remove", tint = Color.White) }
+                        GlassIconButton(Icons.Rounded.Close, "Remove", { vm.removeFromQueue(i) }, size = 36.dp)
                     }
                 }
             }
         } else {
-            Box(Modifier.weight(1f).fillMaxWidth().aspectRatio(1f).glass(RoundedCornerShape(28.dp)), contentAlignment = Alignment.Center) {
-                if (song != null) AsyncImage(model = song.artUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(24.dp)))
-                else Icon(Icons.Rounded.MusicNote, null, tint = Color.White, modifier = Modifier.size(80.dp))
+            Box(
+                Modifier.weight(1f).fillMaxWidth().aspectRatio(1f)
+                    .glass(RoundedCornerShape(30.dp)).padding(10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (song != null) {
+                    AsyncImage(
+                        model = song.artUri, contentDescription = null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(23.dp))
+                    )
+                } else {
+                    Icon(Icons.Rounded.MusicNote, null, tint = fg, modifier = Modifier.size(80.dp))
+                }
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text(song?.title ?: "No song selected", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(song?.artist ?: "", color = Color.White.copy(alpha = .7f))
-        Slider(value = vm.positionMs.toFloat().coerceIn(0f, vm.durationMs.coerceAtLeast(1L).toFloat()), onValueChange = { vm.seekTo(it.toLong()) }, valueRange = 0f..vm.durationMs.coerceAtLeast(1L).toFloat(), colors = SliderDefaults.colors(thumbColor = accent, activeTrackColor = accent))
-        Row(Modifier.fillMaxWidth()) {
-            Text(formatTime(vm.positionMs), color = Color.White.copy(alpha = .7f), fontSize = 12.sp)
-            Spacer(Modifier.weight(1f))
-            Text(formatTime(vm.durationMs), color = Color.White.copy(alpha = .7f), fontSize = 12.sp)
-        }
+        Text(song?.title ?: "No song selected", color = fg, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(song?.artist ?: "", color = fg.copy(alpha = .72f))
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = vm::toggleShuffle) { Icon(Icons.Rounded.Shuffle, "Shuffle", tint = if (vm.shuffle) accent else Color.White) }
-            IconButton(onClick = vm::previous) { Icon(Icons.Rounded.SkipPrevious, "Previous", tint = Color.White, modifier = Modifier.size(34.dp)) }
-            Box(Modifier.size(68.dp).clip(CircleShape).background(accent).clickable { vm.playPause() }, contentAlignment = Alignment.Center) {
-                Icon(if (vm.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, "Play/Pause", tint = Color.Black, modifier = Modifier.size(38.dp))
-            }
-            IconButton(onClick = vm::next) { Icon(Icons.Rounded.SkipNext, "Next", tint = Color.White, modifier = Modifier.size(34.dp)) }
-            IconButton(onClick = vm::cycleRepeat) { Icon(if (vm.repeatMode == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Repeat", tint = if (vm.repeatMode == Player.REPEAT_MODE_OFF) Color.White else accent) }
+        Slider(
+            value = vm.positionMs.toFloat().coerceIn(0f, vm.durationMs.coerceAtLeast(1L).toFloat()),
+            onValueChange = { vm.seekTo(it.toLong()) },
+            valueRange = 0f..vm.durationMs.coerceAtLeast(1L).toFloat(),
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFFF2F5F7), activeTrackColor = Color(0xFFE0E7EB),
+                inactiveTrackColor = Color(0xFF46545D).copy(alpha = .55f)
+            )
+        )
+        Row(Modifier.fillMaxWidth()) {
+            Text(formatTime(vm.positionMs), color = fg.copy(alpha = .7f), fontSize = 12.sp)
+            Spacer(Modifier.weight(1f))
+            Text(formatTime(vm.durationMs), color = fg.copy(alpha = .7f), fontSize = 12.sp)
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            TextButton(onClick = vm::cycleSleepTimer) { Text(if (vm.sleepMinutes == 0) "Sleep timer" else "${vm.sleepMinutes}m", color = Color.White) }
-            TextButton(onClick = vm::cycleSpeed) { Text("${vm.speed}x", color = Color.White) }
-            IconButton(onClick = { song?.let { vm.toggleFavorite(it.id) } }) { Icon(if (song != null && song.id in vm.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Favorite", tint = accent) }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+            GlassIconButton(Icons.Rounded.Shuffle, "Shuffle", vm::toggleShuffle, size = 44.dp, tint = if (vm.shuffle) Color.White else fg)
+            GlassIconButton(Icons.Rounded.SkipPrevious, "Previous", vm::previous, size = 52.dp)
+            Box(
+                Modifier.size(72.dp).glass(CircleShape).clickable { vm.playPause() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(if (vm.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, "Play/Pause", tint = Color.White, modifier = Modifier.size(40.dp))
+            }
+            GlassIconButton(Icons.Rounded.SkipNext, "Next", vm::next, size = 52.dp)
+            GlassIconButton(
+                if (vm.repeatMode == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
+                "Repeat", vm::cycleRepeat, size = 44.dp,
+                tint = if (vm.repeatMode == Player.REPEAT_MODE_OFF) fg else Color.White
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = vm::cycleSleepTimer) { Text(if (vm.sleepMinutes == 0) "Sleep timer" else "${vm.sleepMinutes}m", color = fg) }
+            TextButton(onClick = vm::cycleSpeed) { Text("${vm.speed}x", color = fg) }
+            GlassIconButton(
+                if (song != null && song.id in vm.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                "Favorite", { song?.let { vm.toggleFavorite(it.id) } }, size = 42.dp
+            )
         }
     }
 }
