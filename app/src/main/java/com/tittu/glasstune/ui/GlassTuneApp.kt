@@ -49,6 +49,9 @@ fun GlassTuneApp(vm: MusicViewModel) {
     var granted by remember { mutableStateOf(hasAudio()) }
     var denied by remember { mutableStateOf(false) }
     var showNow by remember { mutableStateOf(false) }
+    var showQuick by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var settingsStartPage by remember { mutableStateOf("HOME") }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = hasAudio()
@@ -72,24 +75,42 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     }
                 )
             } else {
-                val playerVisible = showNow && vm.currentSong != null
-                Box(Modifier.fillMaxSize().then(if (playerVisible) Modifier.blur(18.dp) else Modifier)) {
-                    LibraryScreen(vm, accent, Modifier.fillMaxSize())
+                val overlayVisible = showNow || showQuick || showSettings
+                Box(Modifier.fillMaxSize().then(if (overlayVisible) Modifier.blur(18.dp) else Modifier)) {
+                    LibraryScreen(vm, accent, Modifier.fillMaxSize(), onSettings = { showQuick = true })
                     if (vm.currentSong != null) {
                         MiniPlayer(vm, accent, onClick = { showNow = true }, modifier = Modifier.align(Alignment.BottomCenter))
                     }
                 }
-                if (playerVisible) {
+                if (overlayVisible) {
                     androidx.compose.foundation.layout.Box(
                         Modifier.fillMaxSize().background(Color(0xFF1D2730).copy(alpha = 0.46f))
                     )
                 }
                 AnimatedVisibility(
-                    visible = showNow && vm.currentSong != null,
+                    visible = showNow && vm.currentSong != null && !showQuick && !showSettings,
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
                     NowPlayingScreen(vm, accent, onClose = { showNow = false })
+                }
+                if (showQuick) {
+                    GlassTuneQuickOptions(
+                        vm = vm,
+                        onSettings = { showQuick = false; settingsStartPage = "HOME"; showSettings = true },
+                        onClose = { showQuick = false },
+                        onEqualizer = {
+                            try { ctx.startActivity(Intent(android.media.audiofx.AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
+                                putExtra(android.media.audiofx.AudioEffect.EXTRA_PACKAGE_NAME, ctx.packageName)
+                                putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, 0)
+                            }) } catch (_: Exception) { }
+                        },
+                        onSleep = { vm.cycleSleepTimer() },
+                        onStorage = { showQuick = false; settingsStartPage = "STORAGE"; showSettings = true }
+                    )
+                }
+                if (showSettings) {
+                    GlassTuneSettings(vm, onClose = { showSettings = false }, startPage = settingsStartPage)
                 }
             }
         }
