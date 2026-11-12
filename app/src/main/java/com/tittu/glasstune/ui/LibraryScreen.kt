@@ -64,7 +64,8 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
                 FilterChip(
                     selected = tab == i, onClick = { tab = i },
                     interactionSource = chipInteraction,
-                    modifier = Modifier.glass(RoundedCornerShape(18.dp)).rubberPress(chipInteraction),
+                    modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(chipInteraction),
+                    shape = RoundedCornerShape(20.dp),
                     label = { Text(label) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White.copy(alpha = .24f),
@@ -75,7 +76,7 @@ fun LibraryScreen(vm: MusicViewModel, accent: Color, modifier: Modifier = Modifi
                 )
             }
             val sortInteraction = remember { MutableInteractionSource() }
-            TextButton(onClick = vm::cycleSort, interactionSource = sortInteraction, modifier = Modifier.glass(RoundedCornerShape(18.dp)).rubberPress(sortInteraction)) {
+            TextButton(onClick = vm::cycleSort, interactionSource = sortInteraction, modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(sortInteraction)) {
                 Text(vm.sort.label, color = MaterialTheme.colorScheme.onBackground)
             }
         }
