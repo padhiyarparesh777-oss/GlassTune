@@ -50,8 +50,8 @@ fun Modifier.rubberPress(interactionSource: MutableInteractionSource): Modifier 
         label = "rubberPressY"
     )
     return this.graphicsLayer {
-        scaleX = scaleX
-        scaleY = scaleY
+        this.scaleX = scaleX
+        this.scaleY = scaleY
     }
 }
 
