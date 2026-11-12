@@ -1,19 +1,27 @@
 package com.tittu.glasstune.service
 
 import android.app.PendingIntent
+import android.media.AudioManager
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.tittu.glasstune.MainActivity
 
 class PlaybackService : MediaSessionService() {
+    companion object {
+        @Volatile var audioSessionId: Int = 0
+            private set
+    }
     private var session: MediaSession? = null
 
     override fun onCreate() {
         super.onCreate()
+        val generatedSessionId = (getSystemService(AUDIO_SERVICE) as AudioManager).generateAudioSessionId()
+        if (generatedSessionId > 0) audioSessionId = generatedSessionId
         val player = ExoPlayer.Builder(this)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -25,6 +33,10 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
+        if (audioSessionId > 0) {
+            @OptIn(UnstableApi::class)
+            player.setAudioSessionId(audioSessionId)
+        }
 
         val openApp = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -46,6 +58,7 @@ class PlaybackService : MediaSessionService() {
             release()
         }
         session = null
+        audioSessionId = 0
         super.onDestroy()
     }
 }
