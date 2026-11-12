@@ -63,6 +63,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     var queue by mutableStateOf<List<QueueEntry>>(emptyList()); private set
     var currentIndex by mutableStateOf(0); private set
     var sleepMinutes by mutableStateOf(0); private set
+    var volumeLevel by mutableStateOf(0.85f); private set
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
@@ -173,6 +174,11 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         c.setMediaItems(list.map { it.toMediaItem() }, index.coerceIn(0, list.lastIndex), 0L)
         c.prepare()
         c.play()
+    }
+
+    fun setVolume(value: Float) {
+        volumeLevel = value.coerceIn(0f, 1f)
+        controller?.volume = volumeLevel
     }
 
     fun playPause() {
