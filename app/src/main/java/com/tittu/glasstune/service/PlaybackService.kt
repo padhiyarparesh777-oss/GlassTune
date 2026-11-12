@@ -11,6 +11,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.tittu.glasstune.MainActivity
 
+@OptIn(UnstableApi::class)
 class PlaybackService : MediaSessionService() {
     companion object {
         @Volatile var audioSessionId: Int = 0
@@ -33,10 +34,7 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
-        if (audioSessionId > 0) {
-            @OptIn(UnstableApi::class)
-            player.setAudioSessionId(audioSessionId)
-        }
+        if (audioSessionId > 0) player.setAudioSessionId(audioSessionId)
 
         val openApp = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
