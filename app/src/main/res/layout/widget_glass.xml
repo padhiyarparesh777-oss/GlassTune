@@ -5,59 +5,95 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:gravity="center_vertical"
-    android:orientation="vertical"
-    android:padding="14dp">
+    android:orientation="horizontal"
+    android:padding="12dp">
 
-    <TextView
-        android:id="@+id/widget_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="Nothing playing"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/widget_artist"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="Open GlassTune"
-        android:textColor="#B3FFFFFF"
-        android:textSize="13sp" />
+    <ImageView
+        android:id="@+id/widget_art"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:background="@drawable/widget_art_bg"
+        android:contentDescription="Album art"
+        android:padding="3dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_widget_art" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
 
-        <ImageButton
-            android:id="@+id/widget_prev"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="Previous"
-            android:src="@drawable/ic_widget_prev" />
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Nothing playing"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-        <ImageButton
-            android:id="@+id/widget_play"
-            android:layout_width="56dp"
-            android:layout_height="48dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="Play or pause"
-            android:src="@drawable/ic_widget_play" />
+        <TextView
+            android:id="@+id/widget_artist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Open GlassTune"
+            android:textColor="#BFFFFFFF"
+            android:textSize="12sp" />
 
-        <ImageButton
-            android:id="@+id/widget_next"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="Next"
-            android:src="@drawable/ic_widget_next" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/widget_prev"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="Previous"
+                android:scaleType="center"
+                android:src="@drawable/ic_widget_prev" />
+
+            <ImageButton
+                android:id="@+id/widget_play"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="Play or pause"
+                android:scaleType="center"
+                android:src="@drawable/ic_widget_play" />
+
+            <ImageButton
+                android:id="@+id/widget_next"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="Next"
+                android:scaleType="center"
+                android:src="@drawable/ic_widget_next" />
+
+            <ImageButton
+                android:id="@+id/widget_favorite"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="Favorite"
+                android:scaleType="center"
+                android:src="@drawable/ic_widget_heart" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>
