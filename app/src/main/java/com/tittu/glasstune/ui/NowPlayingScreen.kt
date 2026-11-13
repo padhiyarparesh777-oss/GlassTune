@@ -78,14 +78,9 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onO
     var showInfo by remember { mutableStateOf(false) }
     var showSleep by remember { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF0B1020))) {
-        if (song != null) {
-            AsyncImage(
-                model = song.artUri, contentDescription = null, contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(48.dp).alpha(0.55f)
-            )
-        }
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
+    Box(Modifier.fillMaxSize().background(Color(0xFF050609))) {
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF101116), Color(0xFF050609), Color.Black))))
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.12f)))
 
         Column(
             Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 12.dp),
@@ -111,7 +106,7 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onO
                     DropdownMenu(
                         expanded = menu,
                         onDismissRequest = { menu = false },
-                        modifier = Modifier.background(Color(0xFF1B2236))
+                        modifier = Modifier.background(Color(0xFF24262C))
                     ) {
                         DropdownMenuItem(
                             text = { Text("Equalizer") },
