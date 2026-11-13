@@ -49,7 +49,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 enum class SortOrder(val label: String) {
-    TITLE("Title"), ARTIST("Artist"), ALBUM("Album"), DURATION("Duration"), ADDED("Recently added")
+    TITLE_ASC("A to Z"),
+    TITLE_DESC("Z to A"),
+    ARTIST("Artist"),
+    ALBUM("Album"),
+    DURATION("Duration"),
+    ADDED_NEWEST("Date: Newest first"),
+    ADDED_OLDEST("Date: Oldest first")
 }
 
 data class QueueEntry(val id: String, val title: String, val artist: String)
@@ -286,16 +292,18 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
             it.title.contains(q, true) || it.artist.contains(q, true) || it.album.contains(q, true)
         }
         return when (sort) {
-            SortOrder.TITLE -> list.sortedBy { it.title.lowercase() }
+            SortOrder.TITLE_ASC -> list.sortedBy { it.title.lowercase() }
+            SortOrder.TITLE_DESC -> list.sortedByDescending { it.title.lowercase() }
             SortOrder.ARTIST -> list.sortedBy { it.artist.lowercase() }
             SortOrder.ALBUM -> list.sortedBy { it.album.lowercase() }
             SortOrder.DURATION -> list.sortedByDescending { it.durationMs }
-            SortOrder.ADDED -> list.sortedByDescending { it.dateAdded }
+            SortOrder.ADDED_NEWEST -> list.sortedByDescending { it.dateAdded }
+            SortOrder.ADDED_OLDEST -> list.sortedBy { it.dateAdded }
         }
     }
 
-    fun cycleSort() {
-        sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size]
+    fun setSort(order: SortOrder) {
+        sort = order
     }
 
     fun updateHideShortAudio(enabled: Boolean) {
