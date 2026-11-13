@@ -75,8 +75,6 @@ fun LibraryScreen(
                 }
                 GlassIconButton(Icons.Rounded.Refresh, "Refresh library", { vm.loadLibrary() })
                 Spacer(Modifier.width(8.dp))
-                GlassIconButton(Icons.Rounded.Tune, "Equalizer", onOpenEq, tint = accent)
-                Spacer(Modifier.width(8.dp))
                 GlassIconButton(Icons.Rounded.Settings, "Settings", onOpenSettings)
             }
 
