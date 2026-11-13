@@ -41,6 +41,14 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
             Text("Settings", color = onBg, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
         GlassSection("Appearance") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Song-based dynamic theme", color = onBg, fontWeight = FontWeight.Medium)
+                    Text("Wallpaper and accent follow the playing song", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                }
+                Switch(checked = vm.dynamicThemeEnabled, onCheckedChange = { vm.setDynamicThemeEnabled(it) }, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+            }
+            Spacer(Modifier.height(12.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(ThemeMode.entries.toList()) { m -> PillChip(m.label, vm.themeMode == m, accent) { vm.setTheme(m) } }
             }
