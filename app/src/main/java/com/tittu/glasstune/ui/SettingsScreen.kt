@@ -71,7 +71,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PillChip("AUTO", vm.wallpaperMode == "AUTO", accent) { vm.updateWallpaperMode("AUTO") }
-                PillChip("FIXED", vm.wallpaperMode == "FIXED", accent) { vm.setWallpaperMode("FIXED") }
+                PillChip("FIXED", vm.wallpaperMode == "FIXED", accent) { vm.updateWallpaperMode("FIXED") }
             }
             Spacer(Modifier.height(10.dp))
             Text("Current: ${vm.currentWallpaper?.substringBeforeLast('.')?.replace('_', ' ') ?: "No wallpaper"}", color = onBg, fontSize = 12.sp)
@@ -83,7 +83,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                 items(vm.marvelWallpapers) { name ->
                     PillChip(name.substringBeforeLast('.').replace('_', ' '), vm.currentWallpaper == name, accent) {
                         vm.chooseFixedWallpaper(name)
-                        vm.setWallpaperMode("FIXED")
+                        vm.updateWallpaperMode("FIXED")
                     }
                 }
             }
