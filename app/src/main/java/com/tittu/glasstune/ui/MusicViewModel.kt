@@ -88,6 +88,16 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     var sort by mutableStateOf(SortOrder.TITLE)
     var tab by mutableStateOf(0)
 
+    // Marvel wallpaper collection (same AUTO/FIXED behaviour as Reet Music Player)
+    val marvelWallpapers: List<String> = app.assets.list("backgrounds")?.filter { it.endsWith(".jpg", true) || it.endsWith(".png", true) || it.endsWith(".webp", true) }?.sorted().orEmpty()
+    var wallpaperMode by mutableStateOf(prefs.getString("wallpaper_mode", "AUTO") ?: "AUTO"); private set
+    var fixedWallpaper by mutableStateOf(prefs.getString("fixed_wallpaper", marvelWallpapers.firstOrNull() ?: "") ?: ""); private set
+    var wallpaperIndex by mutableStateOf(prefs.getInt("wallpaper_index", 0).coerceAtLeast(0)); private set
+    val currentWallpaper: String? get() = when (wallpaperMode) {
+        "FIXED" -> fixedWallpaper.takeIf { it in marvelWallpapers }
+        else -> marvelWallpapers.getOrNull(if (marvelWallpapers.isEmpty()) 0 else wallpaperIndex % marvelWallpapers.size)
+    }
+
     // Appearance
     var themeMode by mutableStateOf(ThemeMode.entries[prefs.getInt("theme", 0).coerceIn(0, 2)]); private set
     var accentIndex by mutableStateOf(prefs.getInt("accent", 0).coerceIn(0, AccentColors.size - 1)); private set
@@ -166,7 +176,13 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         currentIndex = c.currentMediaItemIndex
         val id = c.currentMediaItem?.mediaId?.toLongOrNull()
         val nextSong = if (id == null) null else byId[id]
-        if (nextSong?.id != currentSong?.id) updateDynamicAccent(nextSong)
+        if (nextSong?.id != currentSong?.id) {
+            updateDynamicAccent(nextSong)
+            if (nextSong != null && wallpaperMode == "AUTO" && marvelWallpapers.isNotEmpty()) {
+                wallpaperIndex = (wallpaperIndex + 1) % marvelWallpapers.size
+                prefs.edit().putInt("wallpaper_index", wallpaperIndex).apply()
+            }
+        }
         currentSong = nextSong
         if ((currentSong?.id ?: -1L) != lyricsFor) {
             lyricsFor = currentSong?.id ?: -1L
@@ -316,6 +332,22 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit().putInt("accent", accentIndex).apply()
     }
 
+    fun setWallpaperMode(mode: String) {
+        wallpaperMode = if (mode == "FIXED") "FIXED" else "AUTO"
+        prefs.edit().putString("wallpaper_mode", wallpaperMode).apply()
+    }
+    fun setFixedWallpaper(name: String) {
+        if (name !in marvelWallpapers) return
+        fixedWallpaper = name
+        prefs.edit().putString("fixed_wallpaper", name).apply()
+    }
+    fun stepWallpaper(delta: Int) {
+        if (marvelWallpapers.isEmpty()) return
+        val current = marvelWallpapers.indexOf(currentWallpaper).let { if (it < 0) 0 else it }
+        val next = (current + delta + marvelWallpapers.size) % marvelWallpapers.size
+        setFixedWallpaper(marvelWallpapers[next])
+        setWallpaperMode("FIXED")
+    }
     fun updateDynamicThemeEnabled(enabled: Boolean) {
         dynamicThemeEnabled = enabled
         prefs.edit().putBoolean("dynamic_theme", enabled).apply()

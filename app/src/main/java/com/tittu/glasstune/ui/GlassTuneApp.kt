@@ -57,10 +57,10 @@ fun GlassTuneApp(vm: MusicViewModel) {
     LaunchedEffect(granted) { if (granted) vm.loadLibrary() }
 
     val accent = if (vm.dynamicThemeEnabled) vm.dynamicAccent ?: AccentColors[vm.accentIndex] else AccentColors[vm.accentIndex]
-    val wallpaper = vm.currentSong?.artUri
+    val wallpaper = vm.currentWallpaper
 
     GlassTuneTheme(vm.themeMode, accent) {
-        GlassBackground(accent, wallpaper, vm.dynamicThemeEnabled) {
+        GlassBackground(accent, wallpaper, true) {
             if (!granted) {
                 PermissionScreen(
                     denied = denied,

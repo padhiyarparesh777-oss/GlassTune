@@ -79,11 +79,8 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
     var showSleep by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(Color(0xFF050609))) {
-        if (dynamicWallpaper && song != null) {
-            AsyncImage(
-                model = song.artUri, contentDescription = null, contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(42.dp).alpha(0.48f)
-            )
+        if (vm.currentWallpaper != null) {
+            ReetWallpaper(vm.currentWallpaper!!, darken = false, modifier = Modifier.fillMaxSize().blur(42.dp).alpha(0.48f))
         }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF101116).copy(alpha = 0.68f), Color(0xFF050609).copy(alpha = 0.84f), Color.Black.copy(alpha = 0.94f)))))
 

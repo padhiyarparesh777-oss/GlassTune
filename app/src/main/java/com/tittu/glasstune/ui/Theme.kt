@@ -1,6 +1,11 @@
 package com.tittu.glasstune.ui
 
-import android.net.Uri
+import android.graphics.BitmapFactory
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
@@ -54,18 +59,13 @@ fun GlassTuneTheme(mode: ThemeMode, accent: Color, content: @Composable () -> Un
 @Composable
 fun GlassBackground(
     accent: Color,
-    wallpaper: Uri? = null,
+    wallpaperAsset: String? = null,
     wallpaperEnabled: Boolean = true,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(Modifier.fillMaxSize().background(Color(0xFF050609))) {
-        if (wallpaperEnabled && wallpaper != null) {
-            AsyncImage(
-                model = wallpaper,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(42.dp).alpha(0.42f)
-            )
+        if (wallpaperEnabled && wallpaperAsset != null) {
+            ReetWallpaper(wallpaperAsset, darken = false, modifier = Modifier.fillMaxSize().blur(42.dp).alpha(0.46f))
         }
         Box(
             Modifier.fillMaxSize().background(
@@ -94,5 +94,24 @@ fun GlassBackground(
             },
             content = content
         )
+    }
+}
+
+
+@Composable
+fun ReetWallpaper(assetName: String, darken: Boolean = true, modifier: Modifier = Modifier) {
+    val context = LocalContext.current.applicationContext
+    var bitmap by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    androidx.compose.runtime.LaunchedEffect(assetName) {
+        val loaded = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { context.assets.open("backgrounds/$assetName").use { BitmapFactory.decodeStream(it)?.asImageBitmap() } }.getOrNull()
+        }
+        if (loaded != null) bitmap = loaded
+    }
+    Box(modifier.background(Color(0xFF080910))) {
+        Crossfade(bitmap, animationSpec = tween(850), label = "marvel-wallpaper") { image ->
+            if (image != null) Image(image, contentDescription = "Marvel wallpaper", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        }
+        if (darken) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .48f), Color.Black.copy(alpha = .58f)))))
     }
 }
