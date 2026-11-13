@@ -92,7 +92,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     var songs by mutableStateOf<List<Song>>(emptyList()); private set
     var loading by mutableStateOf(false); private set
     var query by mutableStateOf("")
-    var sort by mutableStateOf(SortOrder.TITLE)
+    var sort by mutableStateOf(SortOrder.TITLE_ASC)
     var tab by mutableStateOf(0)
 
     // Marvel wallpaper collection (same AUTO/FIXED behaviour as Reet Music Player)
