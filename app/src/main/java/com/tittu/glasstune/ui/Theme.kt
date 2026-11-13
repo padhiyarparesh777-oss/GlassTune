@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 enum class ThemeMode(val label: String) {
     DARK("AMOLED Black"), AMOLED("Deep Black"), LIGHT("Charcoal")
