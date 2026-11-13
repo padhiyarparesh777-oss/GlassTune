@@ -1,6 +1,7 @@
 package com.tittu.glasstune.ui
 
 import android.app.Application
+import android.graphics.BitmapFactory
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
@@ -11,6 +12,8 @@ import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.palette.graphics.Palette
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -60,6 +63,10 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     private val songsFlow = MutableStateFlow<List<Song>>(emptyList())
     private var sleepJob: Job? = null
     private var lyricsFor: Long = -1L
+    private var paletteJob: Job? = null
+
+    var dynamicThemeEnabled by mutableStateOf(prefs.getBoolean("dynamic_theme", true)); private set
+    var dynamicAccent by mutableStateOf<Color?>(null); private set
 
     // Library
     var songs by mutableStateOf<List<Song>>(emptyList()); private set
@@ -145,7 +152,9 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         positionMs = c.currentPosition.coerceAtLeast(0L)
         currentIndex = c.currentMediaItemIndex
         val id = c.currentMediaItem?.mediaId?.toLongOrNull()
-        currentSong = if (id == null) null else byId[id]
+        val nextSong = if (id == null) null else byId[id]
+        if (nextSong?.id != currentSong?.id) updateDynamicAccent(nextSong)
+        currentSong = nextSong
         if ((currentSong?.id ?: -1L) != lyricsFor) {
             lyricsFor = currentSong?.id ?: -1L
             loadLyrics(currentSong)
@@ -203,6 +212,44 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     fun setAccent(index: Int) {
         accentIndex = index.coerceIn(0, AccentColors.size - 1)
         prefs.edit().putInt("accent", accentIndex).apply()
+    }
+
+    fun setDynamicThemeEnabled(enabled: Boolean) {
+        dynamicThemeEnabled = enabled
+        prefs.edit().putBoolean("dynamic_theme", enabled).apply()
+        if (enabled) updateDynamicAccent(currentSong) else {
+            paletteJob?.cancel()
+            dynamicAccent = null
+        }
+    }
+
+    private fun updateDynamicAccent(song: Song?) {
+        paletteJob?.cancel()
+        if (!dynamicThemeEnabled || song == null) {
+            dynamicAccent = null
+            return
+        }
+        paletteJob = viewModelScope.launch {
+            val rgb = withContext(Dispatchers.IO) {
+                try {
+                    getApplication<Application>().contentResolver.openInputStream(song.artUri)?.use { stream ->
+                        val bitmap = BitmapFactory.decodeStream(stream)
+                        if (bitmap != null) {
+                            val palette = Palette.from(bitmap).maximumColorCount(24).generate()
+                            val color = (palette.vibrantSwatch
+                                ?: palette.lightVibrantSwatch
+                                ?: palette.mutedSwatch
+                                ?: palette.dominantSwatch)?.rgb
+                            bitmap.recycle()
+                            color
+                        } else null
+                    }
+                } catch (_: Exception) { null }
+            }
+            if (currentSong?.id == song.id && dynamicThemeEnabled) {
+                dynamicAccent = rgb?.let { Color(it) }
+            }
+        }
     }
 
     // ---------------- Favorites ----------------
