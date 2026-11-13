@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,9 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.net.Uri
 
 @Composable
-fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
+fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpenEq: () -> Unit) {
     BackHandler(onBack = onClose)
     val onBg = MaterialTheme.colorScheme.onBackground
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -33,6 +35,9 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
     }
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) vm.restoreFrom(uri)
+    }
+    val folderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) vm.setSelectedFolder(uri)
     }
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -61,10 +66,33 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit) {
                 }
             }
         }
-        GlassSection("Library") {
-            Text("${vm.songs.size} songs found on this device", color = onBg.copy(alpha = 0.8f))
+        GlassSection("Playback & library") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Skip audio under 60 seconds", color = onBg, fontWeight = FontWeight.Medium)
+                    Text("Short clips and notification sounds stay hidden", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                }
+                Switch(checked = vm.hideShortAudio, onCheckedChange = vm::setHideShortAudio, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+            }
+            Spacer(Modifier.height(14.dp))
+            Text("Music folder", color = onBg, fontWeight = FontWeight.Medium)
+            Text("Selected: ${vm.selectedFolderLabel}", color = onBg.copy(alpha = 0.7f), fontSize = 12.sp)
             Spacer(Modifier.height(8.dp))
-            Button(onClick = { vm.loadLibrary() }, colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)) { Text("Rescan library") }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { folderLauncher.launch(null) }, colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)) { Text("Choose folder") }
+                OutlinedButton(onClick = { vm.clearSelectedFolder() }) { Text("All folders") }
+            }
+            Spacer(Modifier.height(14.dp))
+            Text("${vm.filteredSongs().size} songs visible • ${vm.songs.size} total indexed", color = onBg.copy(alpha = 0.8f))
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = { vm.loadLibrary() }, colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)) { Text("Rescan library") }
+                OutlinedButton(onClick = onOpenEq) {
+                    Icon(Icons.Rounded.Tune, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Equalizer")
+                }
+            }
         }
         GlassSection("Backup & restore") {
             Text("Saves playlists, favorites, equalizer presets and settings, lyrics you added, and theme to a JSON file. Songs are matched by file path when restoring.", color = onBg.copy(alpha = 0.75f), fontSize = 13.sp)
