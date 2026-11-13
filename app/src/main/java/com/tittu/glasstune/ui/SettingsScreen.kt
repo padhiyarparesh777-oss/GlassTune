@@ -106,7 +106,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                 Spacer(Modifier.height(8.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(listOf(30, 60, 90, 120, 180, 300)) { sec ->
-                        PillChip(if (sec >= 60) "${sec / 60} min" else "${sec} sec", vm.skipShortSeconds == sec, accent) { vm.setSkipShortSeconds(sec) }
+                        PillChip(if (sec >= 60) "${sec / 60} min" else "${sec} sec", vm.skipShortSeconds == sec, accent) { vm.updateSkipShortSeconds(sec) }
                     }
                 }
             }
