@@ -13,11 +13,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.background
-import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 
+enum class AppScreen { HOME, EQ, SETTINGS }
+
 @Composable
 fun GlassTuneApp(vm: MusicViewModel) {
     val ctx = LocalContext.current
@@ -51,9 +48,7 @@ fun GlassTuneApp(vm: MusicViewModel) {
     var granted by remember { mutableStateOf(hasAudio()) }
     var denied by remember { mutableStateOf(false) }
     var showNow by remember { mutableStateOf(false) }
-    var showQuick by remember { mutableStateOf(false) }
-    var showSettings by remember { mutableStateOf(false) }
-    var settingsStartPage by remember { mutableStateOf("HOME") }
+    var screen by remember { mutableStateOf(AppScreen.HOME) }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = hasAudio()
@@ -77,42 +72,33 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     }
                 )
             } else {
-                val overlayVisible = showNow || showQuick || showSettings
-                Box(Modifier.fillMaxSize().then(if (overlayVisible) Modifier.blur(18.dp) else Modifier)) {
-                    LibraryScreen(vm, accent, Modifier.fillMaxSize(), onSettings = { showQuick = true })
-                    if (vm.currentSong != null) {
-                        MiniPlayer(vm, accent, onClick = { showNow = true }, modifier = Modifier.align(Alignment.BottomCenter))
-                    }
+                LibraryScreen(
+                    vm, accent,
+                    onOpenEq = { screen = AppScreen.EQ },
+                    onOpenSettings = { screen = AppScreen.SETTINGS },
+                    modifier = Modifier.fillMaxSize()
+                )
+                if (vm.currentSong != null) {
+                    MiniPlayer(vm, accent, onClick = { showNow = true }, modifier = Modifier.align(Alignment.BottomCenter))
                 }
-                if (overlayVisible) {
-                    androidx.compose.foundation.layout.Box(
-                        Modifier.fillMaxSize().background(Color(0xFF1D2730).copy(alpha = 0.46f))
-                    )
+                if (screen == AppScreen.EQ) {
+                    GlassBackground(accent) { EqualizerScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
+                }
+                if (screen == AppScreen.SETTINGS) {
+                    GlassBackground(accent) { SettingsScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
                 }
                 AnimatedVisibility(
-                    visible = showNow && vm.currentSong != null && !showQuick && !showSettings,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }, animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)),
-                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it }, animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow))
+                    visible = showNow && vm.currentSong != null,
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut()
                 ) {
-                    NowPlayingScreen(vm, accent, onClose = { showNow = false })
-                }
-                if (showQuick) {
-                    GlassTuneQuickOptions(
-                        vm = vm,
-                        onSettings = { showQuick = false; settingsStartPage = "HOME"; showSettings = true },
-                        onClose = { showQuick = false },
-                        onEqualizer = {
-                            try { ctx.startActivity(Intent(android.media.audiofx.AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
-                                putExtra(android.media.audiofx.AudioEffect.EXTRA_PACKAGE_NAME, ctx.packageName)
-                                putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, 0)
-                            }) } catch (_: Exception) { }
-                        },
-                        onSleep = { vm.cycleSleepTimer() },
-                        onStorage = { showQuick = false; settingsStartPage = "STORAGE"; showSettings = true }
-                    )
-                }
-                if (showSettings) {
-                    GlassTuneSettings(vm, onClose = { showSettings = false }, startPage = settingsStartPage)
+                    GlassTuneTheme(ThemeMode.DARK, accent) {
+                        NowPlayingScreen(
+                            vm, accent,
+                            onClose = { showNow = false },
+                            onOpenEq = { showNow = false; screen = AppScreen.EQ }
+                        )
+                    }
                 }
             }
         }
@@ -137,21 +123,15 @@ private fun PermissionScreen(denied: Boolean, accent: Color, onAllow: () -> Unit
                 color = onBg.copy(alpha = 0.75f), textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(24.dp))
-            val allowInteraction = remember { MutableInteractionSource() }
             Button(
                 onClick = onAllow,
-                interactionSource = allowInteraction,
-                modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(allowInteraction),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.16f), contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
             ) { Text("Allow access") }
             if (denied) {
                 Spacer(Modifier.height(8.dp))
-                val settingsInteraction = remember { MutableInteractionSource() }
                 Button(
                     onClick = onSettings,
-                    interactionSource = settingsInteraction,
-                    modifier = Modifier.glass(RoundedCornerShape(20.dp)).rubberPress(settingsInteraction),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f), contentColor = onBg)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.15f), contentColor = onBg)
                 ) { Text("Open app settings") }
             }
         }
