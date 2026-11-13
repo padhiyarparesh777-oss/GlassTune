@@ -51,6 +51,7 @@ dependencies {
     implementation("androidx.media3:media3-common:1.4.1")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("androidx.palette:palette-ktx:1.0.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
