@@ -1,6 +1,11 @@
 package com.tittu.glasstune.ui
 
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,32 +51,47 @@ fun GlassTuneTheme(mode: ThemeMode, accent: Color, content: @Composable () -> Un
 }
 
 @Composable
-fun GlassBackground(accent: Color, content: @Composable BoxScope.() -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.linearGradient(
+fun GlassBackground(
+    accent: Color,
+    wallpaper: Uri? = null,
+    wallpaperEnabled: Boolean = true,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(Modifier.fillMaxSize().background(Color(0xFF050609))) {
+        if (wallpaperEnabled && wallpaper != null) {
+            AsyncImage(
+                model = wallpaper,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().blur(42.dp).alpha(0.42f)
+            )
+        }
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
                     listOf(
-                        androidx.compose.ui.graphics.lerp(Color(0xFF101116), accent, 0.33f),
-                        androidx.compose.ui.graphics.lerp(Color(0xFF08090E), accent, 0.25f),
-                        androidx.compose.ui.graphics.lerp(Color(0xFF030408), accent, 0.20f)
+                        Color(0xFF08090E).copy(alpha = 0.68f),
+                        Color(0xFF050609).copy(alpha = 0.82f),
+                        Color.Black.copy(alpha = 0.92f)
                     )
                 )
             )
-            .drawBehind {
+        )
+        Box(
+            modifier = Modifier.fillMaxSize().drawBehind {
                 val r = size.width * 0.95f
                 val c1 = Offset(size.width * 0.10f, size.height * 0.08f)
                 val c2 = Offset(size.width * 0.92f, size.height * 0.88f)
                 drawCircle(
-                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent), center = c1, radius = r),
+                    Brush.radialGradient(listOf(accent.copy(alpha = 0.10f), Color.Transparent), center = c1, radius = r),
                     radius = r, center = c1
                 )
                 drawCircle(
-                    Brush.radialGradient(listOf(Color(0xFF000000).copy(alpha = 0.20f), Color.Transparent), center = c2, radius = r),
+                    Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.20f), Color.Transparent), center = c2, radius = r),
                     radius = r, center = c2
                 )
             },
-        content = content
-    )
+            content = content
+        )
+    }
 }
