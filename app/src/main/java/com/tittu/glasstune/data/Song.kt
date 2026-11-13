@@ -20,6 +20,9 @@ data class Song(
     /** Stable key for lyrics and playlists, surviving MediaStore ID changes. */
     val lyricsKey: String get() = path.ifEmpty { "id:$id" }
 
+    /** Full parent directory for folder filters; avoids collisions between equal folder names. */
+    val folderPath: String get() = path.substringBeforeLast('/', "")
+
     fun toMediaItem(): MediaItem = MediaItem.Builder()
         .setMediaId(id.toString())
         .setUri(uri)

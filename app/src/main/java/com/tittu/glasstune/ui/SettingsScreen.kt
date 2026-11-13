@@ -94,6 +94,54 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                 }
             }
         }
+        GlassSection("Advanced library filters") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Skip short audio", color = onBg, fontWeight = FontWeight.Medium)
+                    Text("Hide clips shorter than the selected duration", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                }
+                Switch(checked = vm.skipShort, onCheckedChange = vm::setSkipShort, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+            }
+            if (vm.skipShort) {
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(listOf(30, 60, 90, 120, 180, 300)) { sec ->
+                        PillChip(if (sec >= 60) "${sec / 60} min" else "${sec} sec", vm.skipShortSeconds == sec, accent) { vm.setSkipShortSeconds(sec) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Show selected folders only", color = onBg, fontWeight = FontWeight.Medium)
+                    Text("Choose exactly which music folders appear", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                }
+                Switch(checked = vm.folderFilter, onCheckedChange = vm::setFolderFilter, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+            }
+            if (vm.folderFilter) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = vm::selectAllFolders) { Text("Select all") }
+                    OutlinedButton(onClick = vm::clearFolders) { Text("Clear") }
+                }
+                Text(if (vm.selectedFolders.isEmpty()) "No folders selected — showing all folders." else "${vm.selectedFolders.size} selected", color = onBg.copy(alpha = 0.7f), fontSize = 12.sp)
+                Column(Modifier.fillMaxWidth().heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
+                    vm.folders.forEach { folder ->
+                        Row(Modifier.fillMaxWidth().clickable { vm.toggleFolder(folder.path) }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = folder.path in vm.selectedFolders, onCheckedChange = null)
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(folder.name, color = onBg, maxLines = 1)
+                                Text(folder.displayPath, color = onBg.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1)
+                            }
+                            Text("${folder.count}", color = onBg.copy(alpha = 0.7f), fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text("Showing ${vm.songs.size} of ${vm.totalSongCount} indexed songs", color = onBg.copy(alpha = 0.75f), fontSize = 12.sp)
+        }
         GlassSection("Backup & restore") {
             Text("Saves playlists, favorites, equalizer presets and settings, lyrics you added, and theme to a JSON file. Songs are matched by file path when restoring.", color = onBg.copy(alpha = 0.75f), fontSize = 13.sp)
             Spacer(Modifier.height(10.dp))

@@ -54,6 +54,7 @@ enum class SortOrder(val label: String) {
 
 data class QueueEntry(val id: String, val title: String, val artist: String)
 data class PlaylistItem(val rowId: Long, val song: Song)
+data class FolderInfo(val path: String, val name: String, val displayPath: String, val count: Int)
 
 class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -72,6 +73,13 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     var hideShortAudio by mutableStateOf(prefs.getBoolean("hide_short_audio", false)); private set
     var selectedFolderUri by mutableStateOf(prefs.getString("selected_folder_uri", null)); private set
     var selectedFolderLabel by mutableStateOf(prefs.getString("selected_folder_label", "All folders") ?: "All folders"); private set
+    var skipShort by mutableStateOf(prefs.getBoolean("skip_short", false)); private set
+    var skipShortSeconds by mutableStateOf(prefs.getInt("skip_short_sec", 60).coerceIn(10, 300)); private set
+    var folderFilter by mutableStateOf(prefs.getBoolean("folder_filter", false)); private set
+    var selectedFolders by mutableStateOf((prefs.getStringSet("folders", emptySet()) ?: emptySet()).toSet()); private set
+    var folders by mutableStateOf<List<FolderInfo>>(emptyList()); private set
+    var totalSongCount by mutableStateOf(0); private set
+    private var rawSongs: List<Song> = emptyList()
 
     // Library
     var songs by mutableStateOf<List<Song>>(emptyList()); private set
@@ -181,13 +189,57 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             loading = true
             val result = withContext(Dispatchers.IO) { repo.loadSongs() }
-            songs = result
-            songsFlow.value = result
+            rawSongs = result
             byId = result.associateBy { it.id }
+            totalSongCount = result.size
+            applyAdvancedFilters()
             loading = false
             lyricsFor = -2L
             syncState(true)
         }
+    }
+
+    private fun applyAdvancedFilters() {
+        val minMs = if (skipShort) skipShortSeconds * 1000L else 0L
+        val longEnough = rawSongs.filter { it.durationMs >= minMs }
+        folders = longEnough.groupBy { it.folderPath }.map { (path, list) ->
+            val shown = path.removePrefix("/storage/emulated/0").trimStart('/').ifEmpty { "Internal storage" }
+            FolderInfo(path, path.substringAfterLast('/').ifEmpty { "Unknown folder" }, shown, list.size)
+        }.sortedBy { it.displayPath.lowercase() }
+        val visible = if (folderFilter && selectedFolders.isNotEmpty()) longEnough.filter { it.folderPath in selectedFolders } else longEnough
+        songs = visible
+        songsFlow.value = visible
+    }
+
+    fun setSkipShort(on: Boolean) {
+        skipShort = on
+        prefs.edit().putBoolean("skip_short", on).apply()
+        applyAdvancedFilters()
+    }
+
+    fun setSkipShortSeconds(seconds: Int) {
+        skipShortSeconds = seconds.coerceIn(10, 300)
+        prefs.edit().putInt("skip_short_sec", skipShortSeconds).apply()
+        applyAdvancedFilters()
+    }
+
+    fun setFolderFilter(on: Boolean) {
+        folderFilter = on
+        prefs.edit().putBoolean("folder_filter", on).apply()
+        applyAdvancedFilters()
+    }
+
+    fun toggleFolder(path: String) {
+        saveFolders(if (path in selectedFolders) selectedFolders - path else selectedFolders + path)
+    }
+
+    fun selectAllFolders() = saveFolders(folders.map { it.path }.toSet())
+    fun clearFolders() = saveFolders(emptySet())
+
+    private fun saveFolders(next: Set<String>) {
+        selectedFolders = next
+        prefs.edit().putStringSet("folders", HashSet(next)).apply()
+        applyAdvancedFilters()
     }
 
     fun filteredSongs(): List<Song> {
