@@ -1,6 +1,7 @@
 package com.tittu.glasstune.widget
 
 import android.app.PendingIntent
+import android.graphics.BitmapFactory
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
@@ -52,7 +53,10 @@ class GlassWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_title, prefs.getString("title", "Nothing playing"))
             views.setTextViewText(R.id.widget_artist, prefs.getString("artist", "Open GlassTune"))
             val artUri = prefs.getString("art_uri", null)
-            if (!artUri.isNullOrBlank()) views.setImageViewUri(R.id.widget_art, Uri.parse(artUri))
+            val artwork = if (!artUri.isNullOrBlank()) runCatching {
+                context.contentResolver.openInputStream(Uri.parse(artUri))?.use { BitmapFactory.decodeStream(it) }
+            }.getOrNull() else null
+            if (artwork != null) views.setImageViewBitmap(R.id.widget_art, artwork)
             else views.setImageViewResource(R.id.widget_art, R.drawable.ic_widget_art)
             val mediaId = prefs.getString("media_id", null)
             val favoriteIds = context.getSharedPreferences("glasstune", Context.MODE_PRIVATE)
