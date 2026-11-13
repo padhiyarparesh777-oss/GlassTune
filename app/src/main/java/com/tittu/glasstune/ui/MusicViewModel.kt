@@ -130,6 +130,14 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         dao.observePresets().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val listener = object : Player.Listener {
+        override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+            // Use Media3's real track-transition callback; it works even if the library map is not ready.
+            if (mediaItem != null && wallpaperMode == "AUTO" && marvelWallpapers.isNotEmpty()) {
+                wallpaperIndex = (wallpaperIndex + 1) % marvelWallpapers.size
+                prefs.edit().putInt("wallpaper_index", wallpaperIndex).apply()
+            }
+        }
+
         override fun onEvents(player: Player, events: Player.Events) {
             syncState(events.contains(Player.EVENT_TIMELINE_CHANGED))
         }
