@@ -109,7 +109,7 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     }
                 }
             }
-            if (showReetSplash) ReetFeelSplash(onFinished = { showReetSplash = false })
+            if (showReetSplash) SplashScreen(accent, onFinish = { showReetSplash = false })
         }
     }
 }
