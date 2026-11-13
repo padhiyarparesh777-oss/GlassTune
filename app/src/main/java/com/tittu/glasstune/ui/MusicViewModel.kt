@@ -67,6 +67,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     private var sleepJob: Job? = null
     private var lyricsFor: Long = -1L
     private var paletteJob: Job? = null
+    private var lastWallpaperMediaId: String? = null
 
     var dynamicThemeEnabled by mutableStateOf(prefs.getBoolean("dynamic_theme", true)); private set
     var dynamicAccent by mutableStateOf<Color?>(null); private set
@@ -174,14 +175,22 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         durationMs = if (d == C.TIME_UNSET || d < 0) 0L else d
         positionMs = c.currentPosition.coerceAtLeast(0L)
         currentIndex = c.currentMediaItemIndex
-        val id = c.currentMediaItem?.mediaId?.toLongOrNull()
+        val mediaId = c.currentMediaItem?.mediaId
+        val id = mediaId?.toLongOrNull()
         val nextSong = if (id == null) null else byId[id]
-        if (nextSong?.id != currentSong?.id) {
-            updateDynamicAccent(nextSong)
-            if (nextSong != null && wallpaperMode == "AUTO" && marvelWallpapers.isNotEmpty()) {
+
+        // Follow the Media3 item ID, not the library lookup: the playback service
+        // can transition before the asynchronous MediaStore scan has populated byId.
+        // Only actual item changes advance AUTO (not pause, seek, or recomposition).
+        if (mediaId != lastWallpaperMediaId) {
+            lastWallpaperMediaId = mediaId
+            if (mediaId != null && wallpaperMode == "AUTO" && marvelWallpapers.size > 1) {
                 wallpaperIndex = (wallpaperIndex + 1) % marvelWallpapers.size
                 prefs.edit().putInt("wallpaper_index", wallpaperIndex).apply()
             }
+        }
+        if (nextSong?.id != currentSong?.id) {
+            updateDynamicAccent(nextSong)
         }
         currentSong = nextSong
         if ((currentSong?.id ?: -1L) != lyricsFor) {
