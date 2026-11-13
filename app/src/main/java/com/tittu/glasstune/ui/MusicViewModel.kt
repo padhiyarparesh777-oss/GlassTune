@@ -207,10 +207,10 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------------- Favorites ----------------
     fun toggleFavorite(id: Long) {
-        setFavorites(if (id in favorites) favorites - id else favorites + id)
+        persistFavorites(if (id in favorites) favorites - id else favorites + id)
     }
 
-    private fun setFavorites(n: Set<Long>) {
+    private fun persistFavorites(n: Set<Long>) {
         favorites = n
         prefs.edit().putStringSet("fav", n.map { it.toString() }.toSet()).apply()
     }
@@ -488,7 +488,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
             result.theme?.let { setTheme(ThemeMode.entries[it.coerceIn(0, 2)]) }
             result.accent?.let { setAccent(it) }
             val byPath = songList.associateBy { it.path }
-            setFavorites(favorites + result.favoritePaths.mapNotNull { byPath[it]?.id })
+            persistFavorites(favorites + result.favoritePaths.mapNotNull { byPath[it]?.id })
             AudioEffectsHub.reapply()
             toast("Restored ${result.playlists} playlists, favorites and settings")
         }
