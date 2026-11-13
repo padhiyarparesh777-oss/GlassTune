@@ -31,7 +31,7 @@ import com.tittu.glasstune.data.Song
 import com.tittu.glasstune.data.db.PlaylistInfo
 import java.util.Calendar
 
-private val tabs = listOf("Songs", "Albums", "Artists", "Folders", "Favorites", "Recent", "Playlists")
+private val tabs = listOf("Songs", "Recent", "Folder")
 
 @Composable
 fun LibraryScreen(
@@ -103,10 +103,31 @@ fun LibraryScreen(
             if (g == null) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(tabs.size) { i -> PillChip(tabs[i], vm.tab == i, accent) { vm.tab = i } }
-                    item { PillChip("Sort: ${vm.sort.label}", false, accent) { vm.cycleSort() } }
+                    item { PillChip("Songs", vm.tab == 0, accent) { vm.tab = 0 } }
+                    item { PillChip("Recent", vm.tab == 5, accent) { vm.tab = 5 } }
+                    item { PillChip("Folder", vm.tab == 3, accent) { vm.tab = 3 } }
+                    item {
+                        var sortMenu by remember { mutableStateOf(false) }
+                        Box {
+                            PillChip("Short By", sortMenu, accent) { sortMenu = true }
+                            DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }, modifier = Modifier.widthIn(min = 190.dp)) {
+                                SortOrder.entries.forEach { order ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(order.label, modifier = Modifier.weight(1f))
+                                                if (vm.sort == order) Icon(Icons.Rounded.Check, null, tint = accent)
+                                            }
+                                        },
+                                        onClick = { vm.setSort(order); sortMenu = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
                 Row(
