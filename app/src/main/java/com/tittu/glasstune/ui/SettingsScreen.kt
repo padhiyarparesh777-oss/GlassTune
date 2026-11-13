@@ -51,7 +51,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                     Text("Song-based dynamic theme", color = onBg, fontWeight = FontWeight.Medium)
                     Text("Wallpaper and accent follow the playing song", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
                 }
-                Switch(checked = vm.dynamicThemeEnabled, onCheckedChange = { vm.setDynamicThemeEnabled(it) }, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+                Switch(checked = vm.dynamicThemeEnabled, onCheckedChange = { vm.updateDynamicThemeEnabled(it) }, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
             }
             Spacer(Modifier.height(12.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -72,7 +72,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                     Text("Skip audio under 60 seconds", color = onBg, fontWeight = FontWeight.Medium)
                     Text("Short clips and notification sounds stay hidden", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
                 }
-                Switch(checked = vm.hideShortAudio, onCheckedChange = vm::setHideShortAudio, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+                Switch(checked = vm.hideShortAudio, onCheckedChange = vm::updateHideShortAudio, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
             }
             Spacer(Modifier.height(14.dp))
             Text("Music folder", color = onBg, fontWeight = FontWeight.Medium)
@@ -100,7 +100,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                     Text("Skip short audio", color = onBg, fontWeight = FontWeight.Medium)
                     Text("Hide clips shorter than the selected duration", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
                 }
-                Switch(checked = vm.skipShort, onCheckedChange = vm::setSkipShort, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+                Switch(checked = vm.skipShort, onCheckedChange = vm::updateSkipShort, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
             }
             if (vm.skipShort) {
                 Spacer(Modifier.height(8.dp))
@@ -116,7 +116,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                     Text("Show selected folders only", color = onBg, fontWeight = FontWeight.Medium)
                     Text("Choose exactly which music folders appear", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
                 }
-                Switch(checked = vm.folderFilter, onCheckedChange = vm::setFolderFilter, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
+                Switch(checked = vm.folderFilter, onCheckedChange = vm::updateFolderFilter, colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black))
             }
             if (vm.folderFilter) {
                 Spacer(Modifier.height(8.dp))

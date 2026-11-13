@@ -211,19 +211,19 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         songsFlow.value = visible
     }
 
-    fun setSkipShort(on: Boolean) {
+    fun updateSkipShort(on: Boolean) {
         skipShort = on
         prefs.edit().putBoolean("skip_short", on).apply()
         applyAdvancedFilters()
     }
 
-    fun setSkipShortSeconds(seconds: Int) {
+    fun updateSkipShortSeconds(seconds: Int) {
         skipShortSeconds = seconds.coerceIn(10, 300)
         prefs.edit().putInt("skip_short_sec", skipShortSeconds).apply()
         applyAdvancedFilters()
     }
 
-    fun setFolderFilter(on: Boolean) {
+    fun updateFolderFilter(on: Boolean) {
         folderFilter = on
         prefs.edit().putBoolean("folder_filter", on).apply()
         applyAdvancedFilters()
@@ -265,7 +265,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size]
     }
 
-    fun setHideShortAudio(enabled: Boolean) {
+    fun updateHideShortAudio(enabled: Boolean) {
         hideShortAudio = enabled
         prefs.edit().putBoolean("hide_short_audio", enabled).apply()
     }
@@ -316,7 +316,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit().putInt("accent", accentIndex).apply()
     }
 
-    fun setDynamicThemeEnabled(enabled: Boolean) {
+    fun updateDynamicThemeEnabled(enabled: Boolean) {
         dynamicThemeEnabled = enabled
         prefs.edit().putBoolean("dynamic_theme", enabled).apply()
         if (enabled) updateDynamicAccent(currentSong) else {
