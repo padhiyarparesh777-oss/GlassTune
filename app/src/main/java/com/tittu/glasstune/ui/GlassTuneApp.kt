@@ -56,10 +56,11 @@ fun GlassTuneApp(vm: MusicViewModel) {
     }
     LaunchedEffect(granted) { if (granted) vm.loadLibrary() }
 
-    val accent = AccentColors[vm.accentIndex]
+    val accent = if (vm.dynamicThemeEnabled) vm.dynamicAccent ?: AccentColors[vm.accentIndex] else AccentColors[vm.accentIndex]
+    val wallpaper = vm.currentSong?.artUri
 
     GlassTuneTheme(vm.themeMode, accent) {
-        GlassBackground(accent) {
+        GlassBackground(accent, wallpaper, vm.dynamicThemeEnabled) {
             if (!granted) {
                 PermissionScreen(
                     denied = denied,
@@ -82,10 +83,10 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     MiniPlayer(vm, accent, onClick = { showNow = true }, modifier = Modifier.align(Alignment.BottomCenter))
                 }
                 if (screen == AppScreen.EQ) {
-                    GlassBackground(accent) { EqualizerScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
+                    GlassBackground(accent, wallpaper, vm.dynamicThemeEnabled) { EqualizerScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
                 }
                 if (screen == AppScreen.SETTINGS) {
-                    GlassBackground(accent) { SettingsScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
+                    GlassBackground(accent, wallpaper, vm.dynamicThemeEnabled) { SettingsScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
                 }
                 AnimatedVisibility(
                     visible = showNow && vm.currentSong != null,
@@ -95,6 +96,7 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     GlassTuneTheme(ThemeMode.DARK, accent) {
                         NowPlayingScreen(
                             vm, accent,
+                            dynamicWallpaper = vm.dynamicThemeEnabled,
                             onClose = { showNow = false },
                             onOpenEq = { showNow = false; screen = AppScreen.EQ }
                         )
