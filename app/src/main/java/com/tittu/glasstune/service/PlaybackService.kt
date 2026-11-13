@@ -1,28 +1,24 @@
 package com.tittu.glasstune.service
 
 import android.app.PendingIntent
-import android.media.AudioManager
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.tittu.glasstune.MainActivity
+import com.tittu.glasstune.audio.AudioEffectsHub
+import com.tittu.glasstune.widget.GlassWidgetProvider
 
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaSessionService() {
-    companion object {
-        @Volatile var audioSessionId: Int = 0
-            private set
-    }
     private var session: MediaSession? = null
 
     override fun onCreate() {
         super.onCreate()
-        val generatedSessionId = (getSystemService(AUDIO_SERVICE) as AudioManager).generateAudioSessionId()
-        if (generatedSessionId > 0) audioSessionId = generatedSessionId
         val player = ExoPlayer.Builder(this)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -34,7 +30,22 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
-        if (audioSessionId > 0) player.setAudioSessionId(audioSessionId)
+
+        player.addListener(object : Player.Listener {
+            override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                AudioEffectsHub.attach(this@PlaybackService, audioSessionId)
+            }
+
+            override fun onEvents(player: Player, events: Player.Events) {
+                if (events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION) ||
+                    events.contains(Player.EVENT_IS_PLAYING_CHANGED) ||
+                    events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED)
+                ) {
+                    GlassWidgetProvider.update(this@PlaybackService, player)
+                }
+            }
+        })
+        AudioEffectsHub.attach(this, player.audioSessionId)
 
         val openApp = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -45,18 +56,36 @@ class PlaybackService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val action = intent?.action
+        if (action != null && action.startsWith("com.tittu.glasstune.widget.")) {
+            val player = session?.player
+            if (player == null || player.mediaItemCount == 0) {
+                stopSelf()
+            } else {
+                when (action) {
+                    GlassWidgetProvider.ACTION_PLAY_PAUSE -> if (player.isPlaying) player.pause() else player.play()
+                    GlassWidgetProvider.ACTION_NEXT -> player.seekToNextMediaItem()
+                    GlassWidgetProvider.ACTION_PREV -> player.seekToPreviousMediaItem()
+                }
+            }
+            return START_NOT_STICKY
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val p = session?.player
-        if (p == null || !p.playWhenReady || p.mediaItemCount == 0) stopSelf()
+        val player = session?.player
+        if (player == null || !player.playWhenReady || player.mediaItemCount == 0) stopSelf()
     }
 
     override fun onDestroy() {
+        AudioEffectsHub.release()
         session?.run {
             player.release()
             release()
         }
         session = null
-        audioSessionId = 0
         super.onDestroy()
     }
 }
