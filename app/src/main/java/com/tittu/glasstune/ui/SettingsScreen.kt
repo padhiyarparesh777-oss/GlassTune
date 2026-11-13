@@ -25,6 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.net.Uri
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
+import android.os.Build
+import android.widget.Toast
+import com.tittu.glasstune.widget.GlassWidgetProvider
 
 @Composable
 fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpenEq: () -> Unit) {
@@ -65,6 +70,61 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                     Box(Modifier.size(36.dp).clip(CircleShape).background(c).border(if (vm.accentIndex == i) 3.dp else 0.dp, onBg, CircleShape).clickable { vm.setAccent(i) })
                 }
             }
+        }
+
+        GlassSection("Home screen widgets") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("GlassTune Music Widget", color = onBg, fontWeight = FontWeight.SemiBold)
+                    Text("Control music directly from your Android home screen", color = onBg.copy(alpha = 0.68f), fontSize = 12.sp)
+                }
+                Text("LIVE", color = accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(12.dp))
+            Column(
+                Modifier.fillMaxWidth()
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                    .background(
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(Color(0xCC30343D), Color(0x9920252D), Color(0xAA11151D))
+                        )
+                    )
+                    .border(1.dp, Color.White.copy(alpha = 0.24f), androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                    .padding(16.dp)
+            ) {
+                Text(vm.currentSong?.title ?: "Nothing playing", color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(vm.currentSong?.artist ?: "Open GlassTune to start music", color = Color.White.copy(alpha = 0.68f), fontSize = 12.sp, maxLines = 1)
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Icon(Icons.Rounded.SkipPrevious, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.width(28.dp))
+                    androidx.compose.material3.Icon(if (vm.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, tint = accent, modifier = Modifier.size(34.dp))
+                    Spacer(Modifier.width(28.dp))
+                    androidx.compose.material3.Icon(Icons.Rounded.SkipNext, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Text("Previous • Play / Pause • Next • Tap the widget to open GlassTune.", color = onBg.copy(alpha = 0.75f), fontSize = 12.sp)
+            Spacer(Modifier.height(10.dp))
+            Button(
+                onClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val manager = AppWidgetManager.getInstance(ctx)
+                        val provider = ComponentName(ctx, GlassWidgetProvider::class.java)
+                        val pinned = manager.requestPinAppWidget(provider, null, null)
+                        if (!pinned) {
+                            Toast.makeText(ctx, "Your launcher does not support direct widget pinning. Add GlassTune from the home-screen Widgets menu.", Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+                        Toast.makeText(ctx, "Long-press your home screen, open Widgets, then choose GlassTune.", Toast.LENGTH_LONG).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
+            ) {
+                Text(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) "Add to home screen" else "How to add widget")
+            }
+            Text("Or long-press an empty area on your home screen → Widgets → GlassTune Music Widget. Resize it to fit your layout.", color = onBg.copy(alpha = 0.62f), fontSize = 11.sp)
         }
         GlassSection("Marvel wallpapers") {
             Text("32 wallpapers • Same AUTO / FIXED switching as Reet Music Player", color = onBg.copy(alpha = 0.68f), fontSize = 12.sp)
