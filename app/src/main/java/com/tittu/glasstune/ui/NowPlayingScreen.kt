@@ -94,16 +94,16 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
             ReetWallpaper(
                 vm.currentWallpaper!!,
                 darken = false,
-                modifier = Modifier.fillMaxSize().blur(22.dp).alpha(0.78f)
+                modifier = Modifier.fillMaxSize().blur(3.dp).alpha(0.94f)
             )
         }
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF090A10).copy(alpha = 0.24f),
-                        Color(0xFF080910).copy(alpha = 0.42f),
-                        Color.Black.copy(alpha = 0.62f)
+                        Color(0xFF090A10).copy(alpha = 0.12f),
+                        Color(0xFF080910).copy(alpha = 0.22f),
+                        Color.Black.copy(alpha = 0.38f)
                     )
                 )
             )
