@@ -122,7 +122,7 @@ fun LibraryScreen(
                                                 if (vm.sort == order) Icon(Icons.Rounded.Check, null, tint = accent)
                                             }
                                         },
-                                        onClick = { vm.setSort(order); sortMenu = false }
+                                        onClick = { vm.updateSortOrder(order); sortMenu = false }
                                     )
                                 }
                             }
