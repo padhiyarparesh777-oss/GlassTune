@@ -70,7 +70,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
             Text("32 wallpapers • Same AUTO / FIXED switching as Reet Music Player", color = onBg.copy(alpha = 0.68f), fontSize = 12.sp)
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PillChip("AUTO", vm.wallpaperMode == "AUTO", accent) { vm.setWallpaperMode("AUTO") }
+                PillChip("AUTO", vm.wallpaperMode == "AUTO", accent) { vm.updateWallpaperMode("AUTO") }
                 PillChip("FIXED", vm.wallpaperMode == "FIXED", accent) { vm.setWallpaperMode("FIXED") }
             }
             Spacer(Modifier.height(10.dp))
@@ -82,7 +82,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(vm.marvelWallpapers) { name ->
                     PillChip(name.substringBeforeLast('.').replace('_', ' '), vm.currentWallpaper == name, accent) {
-                        vm.setFixedWallpaper(name)
+                        vm.chooseFixedWallpaper(name)
                         vm.setWallpaperMode("FIXED")
                     }
                 }
