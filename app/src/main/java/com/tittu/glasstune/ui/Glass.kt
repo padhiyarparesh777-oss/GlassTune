@@ -40,10 +40,11 @@ import androidx.compose.ui.unit.sp
 /** Frosted-glass surface: translucent gradient fill + soft white border. */
 @Composable
 fun Modifier.glass(shape: Shape = RoundedCornerShape(22.dp)): Modifier {
+    // iOS 17-inspired clear glass: almost transparent fill with a crisp, soft edge.
     val light = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    val top = if (light) 0.65f else 0.16f
-    val bottom = if (light) 0.35f else 0.05f
-    val edge = if (light) 0.9f else 0.45f
+    val top = if (light) 0.16f else 0.055f
+    val bottom = if (light) 0.07f else 0.018f
+    val edge = if (light) 0.42f else 0.30f
     return this
         .clip(shape)
         .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = top), Color.White.copy(alpha = bottom))), shape)
