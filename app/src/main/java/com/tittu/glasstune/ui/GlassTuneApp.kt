@@ -83,10 +83,10 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     MiniPlayer(vm, accent, onClick = { showNow = true }, modifier = Modifier.align(Alignment.BottomCenter))
                 }
                 if (screen == AppScreen.EQ) {
-                    GlassBackground(accent, wallpaper, vm.dynamicThemeEnabled) { EqualizerScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
+                    GlassBackground(accent, wallpaper, true) { EqualizerScreen(vm, accent, onClose = { screen = AppScreen.HOME }) }
                 }
                 if (screen == AppScreen.SETTINGS) {
-                    GlassBackground(accent, wallpaper, vm.dynamicThemeEnabled) { SettingsScreen(vm, accent, onClose = { screen = AppScreen.HOME }, onOpenEq = { screen = AppScreen.EQ }) }
+                    GlassBackground(accent, wallpaper, true) { SettingsScreen(vm, accent, onClose = { screen = AppScreen.HOME }, onOpenEq = { screen = AppScreen.EQ }) }
                 }
                 AnimatedVisibility(
                     visible = showNow && vm.currentSong != null,
