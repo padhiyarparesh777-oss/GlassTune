@@ -302,7 +302,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun setSort(order: SortOrder) {
+    fun updateSortOrder(order: SortOrder) {
         sort = order
     }
 
