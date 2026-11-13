@@ -23,6 +23,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +54,7 @@ fun GlassTuneApp(vm: MusicViewModel) {
     var denied by remember { mutableStateOf(false) }
     var showNow by remember { mutableStateOf(false) }
     var screen by remember { mutableStateOf(AppScreen.HOME) }
+    var showReetSplash by remember { mutableStateOf(true) }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = hasAudio()
@@ -103,6 +109,64 @@ fun GlassTuneApp(vm: MusicViewModel) {
                     }
                 }
             }
+            if (showReetSplash) ReetFeelSplash(onFinished = { showReetSplash = false })
+        }
+    }
+}
+
+@Composable
+private fun ReetFeelSplash(onFinished: () -> Unit) {
+    val scale = remember { Animatable(0.72f) }
+    val alpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        alpha.animateTo(1f, tween(520))
+        delay(320)
+        kotlinx.coroutines.coroutineScope {
+            launch { scale.animateTo(13f, tween(720)) }
+            launch { alpha.animateTo(0f, tween(720)) }
+        }
+        onFinished()
+    }
+
+    Box(Modifier.fillMaxSize().background(Color(0xFF030407)), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+                this.alpha = alpha.value
+            },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "REET FEEL MUSIC",
+                color = Color(0xFF183A63),
+                fontSize = 29.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.2.sp,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.offset(x = 2.dp, y = 4.dp)
+            )
+            Text(
+                "REET FEEL MUSIC",
+                color = Color(0xFF9DDCFF),
+                fontSize = 29.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.2.sp,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.offset(x = 1.dp, y = 1.dp)
+            )
+            Text(
+                "REET FEEL MUSIC",
+                color = Color.White,
+                fontSize = 29.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.2.sp,
+                maxLines = 1,
+                softWrap = false
+            )
         }
     }
 }
