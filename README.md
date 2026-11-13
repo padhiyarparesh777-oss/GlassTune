@@ -21,3 +21,8 @@ Not included yet: equalizer/audio effects, playlists (Room), lyrics, M3U, backup
 
 ## Build in Android Studio
 Open this folder, let Gradle sync, press Run.
+
+
+## Build
+
+The Android debug APK is built by the GitHub Actions workflow in `.github/workflows/build.yml`.
