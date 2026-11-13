@@ -66,7 +66,21 @@ class PlaybackService : MediaSessionService() {
                 when (action) {
                     GlassWidgetProvider.ACTION_PLAY_PAUSE -> if (player.isPlaying) player.pause() else player.play()
                     GlassWidgetProvider.ACTION_NEXT -> player.seekToNextMediaItem()
-                    GlassWidgetProvider.ACTION_PREV -> player.seekToPreviousMediaItem()
+                    GlassWidgetProvider.ACTION_PREV -> {
+                        if (player.currentPosition > 3000L) player.seekTo(0L)
+                        else player.seekToPreviousMediaItem()
+                    }
+                    GlassWidgetProvider.ACTION_FAVORITE -> {
+                        val mediaId = player.currentMediaItem?.mediaId
+                        val id = mediaId?.toLongOrNull()
+                        if (id != null) {
+                            val prefs = getSharedPreferences("glasstune", MODE_PRIVATE)
+                            val current = (prefs.getStringSet("fav", emptySet()) ?: emptySet()).toMutableSet()
+                            if (!current.add(id.toString())) current.remove(id.toString())
+                            prefs.edit().putStringSet("fav", current).apply()
+                            GlassWidgetProvider.refresh(this)
+                        }
+                    }
                 }
             }
             return START_NOT_STICKY
