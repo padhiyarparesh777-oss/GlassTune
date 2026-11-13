@@ -14,11 +14,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +39,7 @@ import com.tittu.glasstune.widget.GlassWidgetProvider
 @Composable
 fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpenEq: () -> Unit) {
     BackHandler(onBack = onClose)
+    val ctx = LocalContext.current
     val onBg = MaterialTheme.colorScheme.onBackground
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) vm.backupTo(uri)
