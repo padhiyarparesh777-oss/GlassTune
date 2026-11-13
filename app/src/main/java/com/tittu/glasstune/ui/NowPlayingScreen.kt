@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -18,11 +19,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -77,12 +82,32 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
     var menu by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
     var showSleep by remember { mutableStateOf(false) }
+    var artworkDrag by remember { mutableFloatStateOf(0f) }
+    val artworkOffset by animateFloatAsState(
+        targetValue = artworkDrag,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
+        label = "artwork-swipe"
+    )
 
     Box(Modifier.fillMaxSize().background(Color(0xFF050609))) {
         if (vm.currentWallpaper != null) {
-            ReetWallpaper(vm.currentWallpaper!!, darken = false, modifier = Modifier.fillMaxSize().blur(42.dp).alpha(0.48f))
+            ReetWallpaper(
+                vm.currentWallpaper!!,
+                darken = false,
+                modifier = Modifier.fillMaxSize().blur(22.dp).alpha(0.78f)
+            )
         }
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF101116).copy(alpha = 0.68f), Color(0xFF050609).copy(alpha = 0.84f), Color.Black.copy(alpha = 0.94f)))))
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF090A10).copy(alpha = 0.24f),
+                        Color(0xFF080910).copy(alpha = 0.42f),
+                        Color.Black.copy(alpha = 0.62f)
+                    )
+                )
+            )
+        )
 
         Column(
             Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 12.dp),
@@ -184,7 +209,31 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                     }
                     Panel.LYRICS -> LyricsPanel(vm, accent)
                     Panel.ART -> Box(
-                        Modifier.fillMaxWidth().aspectRatio(1f).glass(RoundedCornerShape(32.dp)).padding(6.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .graphicsLayer {
+                                translationX = artworkOffset
+                                rotationZ = artworkOffset / 55f
+                            }
+                            .pointerInput(song?.id) {
+                                detectHorizontalDragGestures(
+                                    onHorizontalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        artworkDrag = (artworkDrag + dragAmount).coerceIn(-150f, 150f)
+                                    },
+                                    onDragEnd = {
+                                        when {
+                                            artworkDrag < -64f -> vm.next()
+                                            artworkDrag > 64f -> vm.previous()
+                                        }
+                                        artworkDrag = 0f
+                                    },
+                                    onDragCancel = { artworkDrag = 0f }
+                                )
+                            }
+                            .glass(RoundedCornerShape(32.dp))
+                            .padding(6.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Rounded.MusicNote, null, tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(72.dp))
