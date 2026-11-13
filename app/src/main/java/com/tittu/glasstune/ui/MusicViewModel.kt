@@ -332,11 +332,11 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit().putInt("accent", accentIndex).apply()
     }
 
-    fun setWallpaperMode(mode: String) {
+    fun updateWallpaperMode(mode: String) {
         wallpaperMode = if (mode == "FIXED") "FIXED" else "AUTO"
         prefs.edit().putString("wallpaper_mode", wallpaperMode).apply()
     }
-    fun setFixedWallpaper(name: String) {
+    fun chooseFixedWallpaper(name: String) {
         if (name !in marvelWallpapers) return
         fixedWallpaper = name
         prefs.edit().putString("fixed_wallpaper", name).apply()
@@ -345,8 +345,8 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         if (marvelWallpapers.isEmpty()) return
         val current = marvelWallpapers.indexOf(currentWallpaper).let { if (it < 0) 0 else it }
         val next = (current + delta + marvelWallpapers.size) % marvelWallpapers.size
-        setFixedWallpaper(marvelWallpapers[next])
-        setWallpaperMode("FIXED")
+        chooseFixedWallpaper(marvelWallpapers[next])
+        updateWallpaperMode("FIXED")
     }
     fun updateDynamicThemeEnabled(enabled: Boolean) {
         dynamicThemeEnabled = enabled
