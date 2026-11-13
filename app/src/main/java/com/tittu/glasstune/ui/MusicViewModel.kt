@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
+import android.os.Environment
+import android.provider.DocumentsContract
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
@@ -67,6 +69,9 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
     var dynamicThemeEnabled by mutableStateOf(prefs.getBoolean("dynamic_theme", true)); private set
     var dynamicAccent by mutableStateOf<Color?>(null); private set
+    var hideShortAudio by mutableStateOf(prefs.getBoolean("hide_short_audio", false)); private set
+    var selectedFolderUri by mutableStateOf(prefs.getString("selected_folder_uri", null)); private set
+    var selectedFolderLabel by mutableStateOf(prefs.getString("selected_folder_label", "All folders") ?: "All folders"); private set
 
     // Library
     var songs by mutableStateOf<List<Song>>(emptyList()); private set
@@ -187,7 +192,12 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
     fun filteredSongs(): List<Song> {
         val q = query.trim()
-        val list = if (q.isEmpty()) songs else songs.filter {
+        val folderPath = selectedFolderUri?.let(::folderPathFromTreeUri)
+        val eligible = songs.filter { song ->
+            (!hideShortAudio || song.durationMs >= 60_000L) &&
+                (folderPath == null || song.path.startsWith(folderPath, ignoreCase = true))
+        }
+        val list = if (q.isEmpty()) eligible else eligible.filter {
             it.title.contains(q, true) || it.artist.contains(q, true) || it.album.contains(q, true)
         }
         return when (sort) {
@@ -202,6 +212,46 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     fun cycleSort() {
         sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size]
     }
+
+    fun setHideShortAudio(enabled: Boolean) {
+        hideShortAudio = enabled
+        prefs.edit().putBoolean("hide_short_audio", enabled).apply()
+    }
+
+    fun setSelectedFolder(uri: Uri?) {
+        if (uri == null) {
+            selectedFolderUri = null
+            selectedFolderLabel = "All folders"
+            prefs.edit().remove("selected_folder_uri").remove("selected_folder_label").apply()
+            return
+        }
+        try {
+            getApplication<Application>().contentResolver.takePersistableUriPermission(
+                uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (_: Exception) { }
+        selectedFolderUri = uri.toString()
+        selectedFolderLabel = runCatching {
+            DocumentsContract.getTreeDocumentId(uri).substringAfter(':').substringAfterLast('/').ifBlank { "Selected folder" }
+        }.getOrDefault("Selected folder")
+        prefs.edit().putString("selected_folder_uri", selectedFolderUri)
+            .putString("selected_folder_label", selectedFolderLabel).apply()
+    }
+
+    fun clearSelectedFolder() = setSelectedFolder(null)
+
+    private fun folderPathFromTreeUri(raw: String): String? = runCatching {
+        val tree = Uri.parse(raw)
+        val documentId = DocumentsContract.getTreeDocumentId(tree)
+        val volume = documentId.substringBefore(':')
+        val relative = documentId.substringAfter(':', "")
+        val root = if (volume.equals("primary", true)) {
+            Environment.getExternalStorageDirectory().absolutePath
+        } else {
+            "/storage/$volume"
+        }
+        if (relative.isBlank()) root else "$root/$relative"
+    }.getOrNull()
 
     // ---------------- Appearance ----------------
     fun setTheme(mode: ThemeMode) {
