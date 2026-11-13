@@ -14,8 +14,12 @@ data class Song(
     val uri: Uri,
     val artUri: Uri,
     val dateAdded: Long,
-    val folder: String
+    val folder: String,
+    val path: String
 ) {
+    /** Stable key for lyrics and playlists, surviving MediaStore ID changes. */
+    val lyricsKey: String get() = path.ifEmpty { "id:$id" }
+
     fun toMediaItem(): MediaItem = MediaItem.Builder()
         .setMediaId(id.toString())
         .setUri(uri)
