@@ -67,15 +67,15 @@ fun GlassBackground(
 ) {
     Box(Modifier.fillMaxSize().background(Color(0xFF050609))) {
         if (wallpaperEnabled && wallpaperAsset != null) {
-            ReetWallpaper(wallpaperAsset, darken = false, modifier = Modifier.fillMaxSize().blur(42.dp).alpha(0.46f))
+            ReetWallpaper(wallpaperAsset, darken = false, modifier = Modifier.fillMaxSize().blur(12.dp).alpha(0.88f))
         }
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF08090E).copy(alpha = 0.68f),
-                        Color(0xFF050609).copy(alpha = 0.82f),
-                        Color.Black.copy(alpha = 0.92f)
+                        Color(0xFF08090E).copy(alpha = 0.30f),
+                        Color(0xFF050609).copy(alpha = 0.48f),
+                        Color.Black.copy(alpha = 0.70f)
                     )
                 )
             )
