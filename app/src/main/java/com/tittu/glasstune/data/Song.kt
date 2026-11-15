@@ -11,8 +11,8 @@ data class Song(
     val album: String,
     val albumId: Long,
     val durationMs: Long,
-    val uri: Uri,
-    val artUri: Uri,
+    val uri: String,
+    val artUri: String,
     val dateAdded: Long,
     val folder: String,
     val path: String
@@ -31,7 +31,7 @@ data class Song(
                 .setTitle(title)
                 .setArtist(artist)
                 .setAlbumTitle(album)
-                .setArtworkUri(artUri)
+                .setArtworkUri(Uri.parse(artUri))
                 .build()
         )
         .build()

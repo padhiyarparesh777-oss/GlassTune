@@ -27,7 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 enum class ThemeMode(val label: String) {
-    DARK("AMOLED Black"), AMOLED("Deep Black"), LIGHT("Charcoal")
+    DARK("Frosted Dark"), AMOLED("AMOLED Black"), LIGHT("Light")
 }
 
 val AccentNames = listOf("Silver Mist", "Ocean Blue", "Rose Quartz", "Lavender", "Mint Aqua", "Midnight")
@@ -39,6 +39,26 @@ val AccentColors = listOf(
 
 @Composable
 fun GlassTuneTheme(mode: ThemeMode, accent: Color, content: @Composable () -> Unit) {
+    val light = mode == ThemeMode.LIGHT
+    if (light) {
+        // Genuine light palette: warm paper surfaces with the same accent system.
+        val tintedSurface = androidx.compose.ui.graphics.lerp(Color(0xFFEDF0F3), accent, 0.14f)
+        val scheme = androidx.compose.material3.lightColorScheme(
+            primary = accent,
+            onPrimary = Color.White,
+            secondary = Color(0xFF2A3138),
+            onSecondary = Color(0xFF2A3138),
+            background = androidx.compose.ui.graphics.lerp(Color(0xFFF3F5F8), accent, 0.10f),
+            onBackground = Color(0xFF171B21),
+            surface = tintedSurface,
+            onSurface = Color(0xFF171B21),
+            surfaceVariant = androidx.compose.ui.graphics.lerp(Color(0xFFE4E8ED), accent, 0.12f),
+            onSurfaceVariant = Color(0xFF2A3138),
+            outline = Color(0xFF171B21).copy(alpha = 0.28f)
+        )
+        MaterialTheme(colorScheme = scheme, content = content)
+        return
+    }
     val base = Color(0xFF08090E)
     val tintedBase = androidx.compose.ui.graphics.lerp(base, accent, 0.28f)
     // Each palette keeps the same frosted-silver surface and changes its tint.
@@ -63,21 +83,22 @@ fun GlassBackground(
     accent: Color,
     wallpaperAsset: String? = null,
     wallpaperEnabled: Boolean = true,
+    light: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
-    Box(Modifier.fillMaxSize().background(Color(0xFF050609))) {
+    val baseColor = if (light) Color(0xFFEDF0F4) else Color(0xFF050609)
+    val gradTop = if (light) Color(0xFFF7F9FB).copy(alpha = 0.30f) else Color(0xFF08090E).copy(alpha = 0.30f)
+    val gradMid = if (light) Color(0xFFE9EDF2).copy(alpha = 0.48f) else Color(0xFF050609).copy(alpha = 0.48f)
+    val gradBottom = if (light) Color(0xFFDDE3EA).copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.70f)
+    val glowAlpha = if (light) 0.14f else 0.10f
+    val shadowAlpha = if (light) 0.05f else 0.20f
+    Box(Modifier.fillMaxSize().background(baseColor)) {
         if (wallpaperEnabled && wallpaperAsset != null) {
             ReetWallpaper(wallpaperAsset, darken = false, modifier = Modifier.fillMaxSize().blur(12.dp).alpha(0.88f))
         }
         Box(
             Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF08090E).copy(alpha = 0.30f),
-                        Color(0xFF050609).copy(alpha = 0.48f),
-                        Color.Black.copy(alpha = 0.70f)
-                    )
-                )
+                Brush.verticalGradient(listOf(gradTop, gradMid, gradBottom))
             )
         )
         Box(
@@ -86,11 +107,11 @@ fun GlassBackground(
                 val c1 = Offset(size.width * 0.10f, size.height * 0.08f)
                 val c2 = Offset(size.width * 0.92f, size.height * 0.88f)
                 drawCircle(
-                    Brush.radialGradient(listOf(accent.copy(alpha = 0.10f), Color.Transparent), center = c1, radius = r),
+                    Brush.radialGradient(listOf(accent.copy(alpha = glowAlpha), Color.Transparent), center = c1, radius = r),
                     radius = r, center = c1
                 )
                 drawCircle(
-                    Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.20f), Color.Transparent), center = c2, radius = r),
+                    Brush.radialGradient(listOf(Color.Black.copy(alpha = shadowAlpha), Color.Transparent), center = c2, radius = r),
                     radius = r, center = c2
                 )
             },

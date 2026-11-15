@@ -31,6 +31,7 @@ import com.tittu.glasstune.data.Song
 import com.tittu.glasstune.data.db.AppDatabase
 import com.tittu.glasstune.data.db.EqPresetEntity
 import com.tittu.glasstune.data.db.LyricsEntity
+import com.tittu.glasstune.data.db.PlayHistoryEntity
 import com.tittu.glasstune.data.db.PlaylistEntity
 import com.tittu.glasstune.data.db.PlaylistInfo
 import com.tittu.glasstune.data.db.PlaylistSongEntity
@@ -74,6 +75,9 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     private var lyricsFor: Long = -1L
     private var paletteJob: Job? = null
     private var lastWallpaperMediaId: String? = null
+    private var ticker: Job? = null
+    private var observerJob: Job? = null
+    private var tickCount = 0
 
     var dynamicThemeEnabled by mutableStateOf(prefs.getBoolean("dynamic_theme", true)); private set
     var dynamicAccent by mutableStateOf<Color?>(null); private set
@@ -135,12 +139,55 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     val customPresets: StateFlow<List<EqPresetEntity>> =
         dao.observePresets().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    // Listening history (offline smart features)
+    val recentlyPlayed: StateFlow<List<Song>> =
+        dao.observeRecentlyPlayed(100).combine(songsFlow) { rows, all ->
+            val byPath = all.associateBy { it.lyricsKey }
+            val byId = all.associateBy { it.id }
+            rows.mapNotNull { byPath[it.songPath] ?: byId[it.songId] }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val mostPlayed: StateFlow<List<Song>> =
+        dao.observeMostPlayed(100).combine(songsFlow) { rows, all ->
+            val byPath = all.associateBy { it.lyricsKey }
+            val byId = all.associateBy { it.id }
+            rows.mapNotNull { byPath[it.songPath] ?: byId[it.songId] }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private fun recordPlay(song: Song) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val existing = dao.getHistory(song.lyricsKey)
+                dao.upsertHistory(
+                    PlayHistoryEntity(
+                        songPath = song.lyricsKey,
+                        songId = song.id,
+                        title = song.title,
+                        artist = song.artist,
+                        playCount = (existing?.playCount ?: 0) + 1,
+                        lastPlayed = System.currentTimeMillis()
+                    )
+                )
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch(Dispatchers.IO) { dao.clearHistory() }
+    }
+
     private val listener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
             // Use Media3's real track-transition callback; it works even if the library map is not ready.
             if (mediaItem != null && wallpaperMode == "AUTO" && marvelWallpapers.isNotEmpty()) {
                 wallpaperIndex = (wallpaperIndex + 1) % marvelWallpapers.size
                 prefs.edit().putInt("wallpaper_index", wallpaperIndex).apply()
+            }
+            // Record listening history for every real track transition (skips paused restores).
+            if (controller?.playWhenReady == true) {
+                mediaItem?.mediaId?.toLongOrNull()?.let { id ->
+                    (byId[id] ?: songsFlow.value.firstOrNull { it.id == id })?.let { recordPlay(it) }
+                }
             }
         }
 
@@ -149,15 +196,29 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    init {
-        connect()
-        viewModelScope.launch {
-            while (true) {
-                if (isPlaying) controller?.let { positionMs = it.currentPosition.coerceAtLeast(0L) }
-                delay(500)
+    private val mediaObserver = object : android.database.ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            observerJob?.cancel()
+            observerJob = viewModelScope.launch {
+                delay(2000)
+                if (hasAudioPermission()) loadLibrary()
             }
         }
     }
+
+    init {
+        connect()
+        // Auto-refresh the library when MediaStore changes (new/deleted/renamed files).
+        getApplication<Application>().contentResolver.registerContentObserver(
+            android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, mediaObserver
+        )
+    }
+
+    private fun hasAudioPermission(): Boolean = ContextCompat.checkSelfPermission(
+        getApplication(),
+        if (android.os.Build.VERSION.SDK_INT >= 33) android.Manifest.permission.READ_MEDIA_AUDIO
+        else android.Manifest.permission.READ_EXTERNAL_STORAGE
+    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
     private fun toast(msg: String) {
         Handler(Looper.getMainLooper()).post {
@@ -165,7 +226,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun connect() {
+    private fun connect(retries: Int = 3) {
         val ctx = getApplication<Application>()
         val token = SessionToken(ctx, ComponentName(ctx, PlaybackService::class.java))
         val future = MediaController.Builder(ctx, token).buildAsync()
@@ -175,6 +236,12 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
                 syncState(true)
             } catch (e: Exception) {
                 controller = null
+                if (retries > 0) {
+                    viewModelScope.launch {
+                        delay(1500)
+                        if (controller == null) connect(retries - 1)
+                    }
+                }
             }
         }, ContextCompat.getMainExecutor(ctx))
     }
@@ -221,6 +288,56 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
         }
+        if (c.mediaItemCount == 0) {
+            prefs.edit().remove("queue_ids").remove("queue_index").remove("queue_pos").apply()
+        } else {
+            persistPlaybackState(c)
+        }
+        if (c.isPlaying) startPositionTicker() else stopPositionTicker()
+    }
+
+    // ---------------- Playback state persistence / restoration ----------------
+    private fun persistPlaybackState(c: Player) {
+        val ids = (0 until c.mediaItemCount).joinToString(",") { c.getMediaItemAt(it).mediaId }
+        prefs.edit()
+            .putString("queue_ids", ids)
+            .putInt("queue_index", c.currentMediaItemIndex)
+            .putLong("queue_pos", c.currentPosition.coerceAtLeast(0L))
+            .apply()
+    }
+
+    private fun startPositionTicker() {
+        if (ticker?.isActive == true) return
+        ticker = viewModelScope.launch {
+            while (true) {
+                delay(250)
+                val c = controller ?: continue
+                positionMs = c.currentPosition.coerceAtLeast(0L)
+                if (++tickCount % 8 == 0) persistPlaybackState(c)
+            }
+        }
+    }
+
+    private fun stopPositionTicker() {
+        ticker?.cancel()
+        ticker = null
+        controller?.let { persistPlaybackState(it) }
+    }
+
+    /** After a library scan, rebuild the last queue (paused) so app restarts keep the session. */
+    private fun restoreQueueIfAny() {
+        val c = controller ?: return
+        if (c.mediaItemCount > 0) return
+        val saved = prefs.getString("queue_ids", null)
+            ?.split(",")?.mapNotNull { it.toLongOrNull() }
+            .orEmpty()
+        val list = saved.mapNotNull { byId[it] }
+        if (list.isEmpty()) return
+        val idx = prefs.getInt("queue_index", 0).coerceIn(0, list.lastIndex)
+        val pos = prefs.getLong("queue_pos", 0L).coerceAtLeast(0L)
+        c.setMediaItems(list.map { it.toMediaItem() }, idx, pos)
+        c.prepare()
+        c.playWhenReady = false
     }
 
     // ---------------- Library ----------------
@@ -234,6 +351,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
             applyAdvancedFilters()
             loading = false
             lyricsFor = -2L
+            restoreQueueIfAny()
             syncState(true)
         }
     }
@@ -282,15 +400,38 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun filteredSongs(): List<Song> {
-        val q = query.trim()
+        var text = query.trim()
+        var minMs = 0L
+        var maxMs = Long.MAX_VALUE
+        var field: String? = null
+        // Natural-language modifiers: "longer than 3 min", "under 2 min", "artist:arijit", "album:love"
+        Regex("(?i)(longer than|>)\\s*(\\d+)\\s*(min|minute|m)?").find(text)?.let {
+            minMs = it.groupValues[2].toLong() * 60_000L
+            text = text.replace(it.value, " ")
+        }
+        Regex("(?i)(shorter than|under|<)\\s*(\\d+)\\s*(min|minute|m)?").find(text)?.let {
+            maxMs = it.groupValues[2].toLong() * 60_000L
+            text = text.replace(it.value, " ")
+        }
+        Regex("(?i)(artist|album)\\s*:\\s*(\\S+)").find(text)?.let {
+            field = it.groupValues[1].lowercase()
+            text = text.replace(it.value, it.groupValues[2])
+        }
+        val q = text.trim()
         val folderPath = selectedFolderUri?.let(::folderPathFromTreeUri)
         val eligible = songs.filter { song ->
-            (!hideShortAudio || song.durationMs >= 60_000L) &&
+            song.durationMs in minMs..maxMs &&
+                (!hideShortAudio || song.durationMs >= 60_000L) &&
                 (folderPath == null || song.path.startsWith(folderPath, ignoreCase = true))
         }
-        val list = if (q.isEmpty()) eligible else eligible.filter {
-            it.title.contains(q, true) || it.artist.contains(q, true) || it.album.contains(q, true)
+        val matches: (Song) -> Boolean = when (field) {
+            "artist" -> { s -> s.artist.contains(q, true) }
+            "album" -> { s -> s.album.contains(q, true) }
+            else -> { s ->
+                q.isEmpty() || s.title.contains(q, true) || s.artist.contains(q, true) || s.album.contains(q, true)
+            }
         }
+        val list = eligible.filter(matches)
         return when (sort) {
             SortOrder.TITLE_ASC -> list.sortedBy { it.title.lowercase() }
             SortOrder.TITLE_DESC -> list.sortedByDescending { it.title.lowercase() }
@@ -391,7 +532,8 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         paletteJob = viewModelScope.launch {
             val rgb = withContext(Dispatchers.IO) {
                 try {
-                    getApplication<Application>().contentResolver.openInputStream(song.artUri)?.use { stream ->
+                    val artUri = song.artUri
+                    getApplication<Application>().contentResolver.openInputStream(android.net.Uri.parse(artUri))?.use { stream ->
                         val bitmap = BitmapFactory.decodeStream(stream)
                         if (bitmap != null) {
                             val palette = Palette.from(bitmap).maximumColorCount(24).generate()
@@ -481,6 +623,20 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun removeFromQueue(index: Int) { controller?.removeMediaItem(index) }
+
+    fun moveQueueItem(index: Int, delta: Int) {
+        val c = controller ?: return
+        val target = index + delta
+        if (index !in 0 until c.mediaItemCount || target !in 0 until c.mediaItemCount) return
+        c.moveMediaItem(index, target)
+    }
+
+    fun clearQueue() {
+        val c = controller ?: return
+        val cur = c.currentMediaItemIndex
+        c.removeMediaItems(cur + 1, c.mediaItemCount)
+        c.removeMediaItems(0, cur)
+    }
 
     // ---------------- Sleep timer (10 s fade-out) ----------------
     fun cycleSleepTimer() {
@@ -715,6 +871,9 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         sleepJob?.cancel()
+        ticker?.cancel()
+        getApplication<Application>().contentResolver.unregisterContentObserver(mediaObserver)
+        controller?.let { persistPlaybackState(it) }
         controller?.removeListener(listener)
         controller?.release()
         controller = null

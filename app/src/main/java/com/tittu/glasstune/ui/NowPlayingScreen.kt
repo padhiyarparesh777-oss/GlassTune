@@ -164,11 +164,11 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                                 menu = false
                                 if (song != null) {
                                     try {
-                                        val send = Intent(Intent.ACTION_SEND).apply {
-                                            type = "audio/*"
-                                            putExtra(Intent.EXTRA_STREAM, song.uri)
-                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        }
+                                    val send = Intent(Intent.ACTION_SEND).apply {
+                                        type = "audio/*"
+                                        putExtra(Intent.EXTRA_STREAM, android.net.Uri.parse(song.uri))
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
                                         ctx.startActivity(Intent.createChooser(send, "Share song"))
                                     } catch (e: Exception) { /* no app can handle it */ }
                                 }
@@ -193,17 +193,39 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
             // ---- Panel: artwork / queue / lyrics ----
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 when (panel) {
-                    Panel.QUEUE -> LazyColumn(Modifier.fillMaxSize().glass(RoundedCornerShape(24.dp)), contentPadding = PaddingValues(12.dp)) {
-                        itemsIndexed(vm.queue) { i, q ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable { vm.skipTo(i) }.padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(q.title, color = if (i == vm.currentIndex) accent else Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
-                                    Text(q.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Panel.QUEUE -> Column {
+                        Row(
+                            Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Queue • ${vm.queue.size}",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 13.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = { vm.clearQueue() }, enabled = vm.queue.size > 1) {
+                                Text("Clear all", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                            }
+                        }
+                        LazyColumn(Modifier.fillMaxSize().glass(RoundedCornerShape(24.dp)), contentPadding = PaddingValues(12.dp)) {
+                            itemsIndexed(vm.queue) { i, q ->
+                                Row(
+                                    Modifier.fillMaxWidth().clickable { vm.skipTo(i) }.padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(q.title, color = if (i == vm.currentIndex) accent else Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
+                                        Text(q.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    IconButton(onClick = { vm.moveQueueItem(i, -1) }, enabled = i > 0) {
+                                        Icon(Icons.Rounded.KeyboardArrowUp, "Move up", tint = Color.White.copy(alpha = 0.7f))
+                                    }
+                                    IconButton(onClick = { vm.moveQueueItem(i, 1) }, enabled = i < vm.queue.lastIndex) {
+                                        Icon(Icons.Rounded.KeyboardArrowDown, "Move down", tint = Color.White.copy(alpha = 0.7f))
+                                    }
+                                    IconButton(onClick = { vm.removeFromQueue(i) }) { Icon(Icons.Rounded.Close, "Remove", tint = Color.White.copy(alpha = 0.7f)) }
                                 }
-                                IconButton(onClick = { vm.removeFromQueue(i) }) { Icon(Icons.Rounded.Close, "Remove", tint = Color.White.copy(alpha = 0.7f)) }
                             }
                         }
                     }

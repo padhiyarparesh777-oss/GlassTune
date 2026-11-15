@@ -9,6 +9,11 @@ android {
     namespace = "com.tittu.glasstune"
     compileSdk = 34
 
+    // Room's bundled sqlite-jdbc (3.41) lacks Linux aarch64 natives; force a version that has them.
+    configurations.all {
+        resolutionStrategy { force("org.xerial:sqlite-jdbc:3.45.1.0") }
+    }
+
     defaultConfig {
         applicationId = "com.tittu.glasstune"
         minSdk = 26
@@ -19,7 +24,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -31,6 +37,8 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+
+    testOptions { unitTests { isIncludeAndroidResources = true } }
 }
 
 dependencies {
@@ -56,4 +64,8 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
+    // Newer sqlite-jdbc on the KSP classpath: bundles Linux aarch64 natives (Termux/ARM builds).
+    ksp("org.xerial:sqlite-jdbc:3.45.1.0")
+
+    testImplementation("junit:junit:4.13.2")
 }

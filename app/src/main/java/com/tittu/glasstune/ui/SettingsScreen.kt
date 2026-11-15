@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +42,10 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
     BackHandler(onBack = onClose)
     val ctx = LocalContext.current
     val onBg = MaterialTheme.colorScheme.onBackground
+    val visibleCount = remember(
+        vm.songs, vm.query, vm.sort, vm.hideShortAudio, vm.selectedFolderUri,
+        vm.skipShort, vm.skipShortSeconds, vm.folderFilter, vm.selectedFolders
+    ) { vm.filteredSongs().size }
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) vm.backupTo(uri)
     }
@@ -171,7 +176,7 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
                 OutlinedButton(onClick = { vm.clearSelectedFolder() }) { Text("All folders") }
             }
             Spacer(Modifier.height(14.dp))
-            Text("${vm.filteredSongs().size} songs visible • ${vm.songs.size} total indexed", color = onBg.copy(alpha = 0.8f))
+            Text("$visibleCount songs visible • ${vm.songs.size} total indexed", color = onBg.copy(alpha = 0.8f))
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = { vm.loadLibrary() }, colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)) { Text("Rescan library") }

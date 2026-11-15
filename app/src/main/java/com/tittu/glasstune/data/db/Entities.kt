@@ -44,4 +44,14 @@ data class LyricsEntity(
     val text: String
 )
 
+@Entity(tableName = "play_history")
+data class PlayHistoryEntity(
+    @PrimaryKey val songPath: String,
+    val songId: Long,
+    val title: String,
+    val artist: String,
+    val playCount: Int,
+    val lastPlayed: Long
+)
+
 data class PlaylistInfo(val id: Long, val name: String, val songCount: Int)

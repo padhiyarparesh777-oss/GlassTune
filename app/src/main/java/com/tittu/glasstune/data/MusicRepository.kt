@@ -57,8 +57,8 @@ class MusicRepository(private val context: Context) {
                         album = cursor.getString(iAlbum) ?: "Unknown album",
                         albumId = albumId,
                         durationMs = cursor.getLong(iDuration),
-                        uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id),
-                        artUri = ContentUris.withAppendedId(artBase, albumId),
+                        uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id).toString(),
+                        artUri = ContentUris.withAppendedId(artBase, albumId).toString(),
                         dateAdded = cursor.getLong(iAdded),
                         folder = File(path).parentFile?.name ?: "Unknown folder",
                         path = path

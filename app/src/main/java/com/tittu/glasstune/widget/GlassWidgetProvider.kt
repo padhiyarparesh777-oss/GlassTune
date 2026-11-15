@@ -17,8 +17,7 @@ import com.tittu.glasstune.service.PlaybackService
 /** Home-screen widget with track information and transport controls. */
 class GlassWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
-        val views = build(context)
-        appWidgetIds.forEach { manager.updateAppWidget(it, views) }
+        refresh(context)
     }
 
     companion object {
@@ -43,9 +42,17 @@ class GlassWidgetProvider : AppWidgetProvider() {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, GlassWidgetProvider::class.java))
             if (ids.isEmpty()) return
-            val views = build(context)
-            ids.forEach { manager.updateAppWidget(it, views) }
+            // Bitmap decoding happens off the main thread to avoid jank/ANRs.
+            EXECUTOR.execute {
+                val views = build(context)
+                ids.forEach { manager.updateAppWidget(it, views) }
+            }
         }
+
+        private val EXECUTOR: java.util.concurrent.Executor =
+            java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+                Thread(r, "glasstune-widget").apply { isDaemon = true }
+            }
 
         private fun build(context: Context): RemoteViews {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

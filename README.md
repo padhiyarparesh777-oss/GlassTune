@@ -4,25 +4,43 @@ Offline Android music player with a frosted-glass UI (Kotlin, Jetpack Compose, M
 
 ## Versions
 AGP 8.5.2, Kotlin 2.0.20 (Compose compiler plugin), Gradle 8.7, JDK 17, compileSdk/targetSdk 34, minSdk 26,
-Compose BOM 2024.09.00, Media3 1.4.1, Coil 2.7.0.
+Compose BOM 2024.09.00, Media3 1.4.1, Coil 2.7.0, Room 2.6.1.
 
-## Features in this build
-- MediaStore library scan (real device music), album art, search, sort, Albums / Artists / Folders / Favorites / Recent
-- Media3 ExoPlayer in a foreground MediaSessionService: background playback, notification, lock screen, Bluetooth buttons, audio focus, headphone-unplug pause
-- Now Playing: seek, shuffle, repeat off/all/one, queue (play next, add, remove, jump), speed, favorites, sleep timer with fade-out
-- Glass UI, Dark / AMOLED / Light themes, 5 accent colors (persisted)
+## Features
+- MediaStore library scan with auto-refresh on MediaStore changes, album art, search (with natural-language
+  modifiers like `longer than 3 min`, `artist:name`, `album:name`), 7 sort modes
+- Browsing: Songs / Albums / Artists / Folders / Favorites / Recent / Playlists / History / Top (most played)
+- Media3 ExoPlayer in a foreground MediaSessionService: background playback, notification, lock screen,
+  Bluetooth buttons, audio focus, headphone-unplug pause, offline voice search ("play <title>" via Assistant)
+- Queue: play next, add, remove, jump, reorder, clear; queue and playback position survive app restarts
+- Software audio FX (work on every device): 10-band graphic EQ with presets, stereo balance,
+  approximate volume normalization — plus hardware Equalizer / Bass Boost / Virtualizer / Loudness Enhancer
+  with graceful fallback where unsupported, custom presets (Room), per-device EQ profiles
+- Reverb presets (PresetReverb), waveform visualizer (optional, runtime mic permission)
+- Playlists (Room): create / rename / delete / reorder, M3U import & export
+- Lyrics: synced LRC rendering, editor, import, stored per song
+- Backup & restore (JSON): playlists, favorites, EQ presets, lyrics, FX settings, theme
+- Sleep timer with 10 s fade-out, playback speed (0.75x–2x)
+- Home-screen widget: play/pause, next, previous, favorite, album art (decoded off the main thread)
+- Glass UI, Frosted Dark / AMOLED Black / Light themes, dynamic accent from artwork, Marvel wallpapers
 - Permission screen with denied state + settings shortcut
 
-Not included yet: equalizer/audio effects, playlists (Room), lyrics, M3U, backup, widgets, queue reorder.
+## Known limitations
+- Volume normalization is an approximate rolling-RMS normalizer, not ReplayGain-tag based
+- Crossfade and gapless configuration are not implemented (depends on ExoPlayer audio processing support)
+- The 10-band graphic EQ is software DSP applied to the player's PCM stream (not lossless bypass)
+- Android Auto uses the default MediaSession behavior; no custom browse tree yet
+- Release APK is unsigned (debug signing only); add a signing config before distribution
 
 ## Build the APK on GitHub (no Android Studio needed)
 1. Open the repo's **Actions** tab and wait for "Build GlassTune APK" to finish (or run it via "Run workflow").
-2. Open the finished run, download the artifact **GlassTune-debug-apk**, unzip it and install `app-debug.apk`.
+2. Open the finished run, download the artifact **GlassTune-debug-apk** (or **GlassTune-release-apk**),
+   unzip it and install the `.apk`.
 
 ## Build in Android Studio
 Open this folder, let Gradle sync, press Run.
 
-
 ## Build
 
-The Android debug APK is built by the GitHub Actions workflow in `.github/workflows/build.yml`.
+The debug and release APKs plus unit tests run in the GitHub Actions workflow in `.github/workflows/build.yml`.
+Unit tests (LRC parser, M3U import/export) live in `app/src/test/`.

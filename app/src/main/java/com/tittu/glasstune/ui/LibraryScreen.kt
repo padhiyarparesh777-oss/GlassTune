@@ -31,7 +31,19 @@ import com.tittu.glasstune.data.Song
 import com.tittu.glasstune.data.db.PlaylistInfo
 import java.util.Calendar
 
-private val tabs = listOf("Songs", "Recent", "Folder")
+private data class LibraryTab(val index: Int, val label: String)
+
+private val tabs = listOf(
+    LibraryTab(0, "Songs"),
+    LibraryTab(1, "Albums"),
+    LibraryTab(2, "Artists"),
+    LibraryTab(3, "Folder"),
+    LibraryTab(4, "Favorites"),
+    LibraryTab(5, "Recent"),
+    LibraryTab(6, "Playlists"),
+    LibraryTab(7, "History"),
+    LibraryTab(8, "Top")
+)
 
 @Composable
 fun LibraryScreen(
@@ -106,13 +118,11 @@ fun LibraryScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    item { PillChip("Songs", vm.tab == 0, accent) { vm.tab = 0 } }
-                    item { PillChip("Recent", vm.tab == 5, accent) { vm.tab = 5 } }
-                    item { PillChip("Folder", vm.tab == 3, accent) { vm.tab = 3 } }
+                    items(tabs) { t -> PillChip(t.label, vm.tab == t.index, accent) { vm.tab = t.index } }
                     item {
                         var sortMenu by remember { mutableStateOf(false) }
                         Box {
-                            PillChip("Short By", sortMenu, accent) { sortMenu = true }
+                            PillChip("Sort By", sortMenu, accent) { sortMenu = true }
                             DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }, modifier = Modifier.widthIn(min = 190.dp)) {
                                 SortOrder.entries.forEach { order ->
                                     DropdownMenuItem(
@@ -136,7 +146,7 @@ fun LibraryScreen(
                 ) {
                     GlassIconButton(Icons.Rounded.ArrowBack, "Back", { group = null }, size = 40.dp)
                     Spacer(Modifier.width(12.dp))
-                    Text(g.first, color = onBg, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(g.first.substringAfterLast('/').ifEmpty { g.first }, color = onBg, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
 
@@ -156,9 +166,12 @@ fun LibraryScreen(
                         0 -> SongList(vm, accent, base, onAddToPlaylist = onAdd)
                         1 -> GroupList(base.groupBy { it.album }) { k, v -> group = k to v }
                         2 -> GroupList(base.groupBy { it.artist }) { k, v -> group = k to v }
-                        3 -> GroupList(base.groupBy { it.folder }) { k, v -> group = k to v }
+                        3 -> GroupList(base.groupBy { it.folderPath.ifEmpty { "Unknown folder" } }, keyLabel = { it.substringAfterLast('/').ifEmpty { "Unknown folder" } }) { k, v -> group = k to v }
                         4 -> SongList(vm, accent, base.filter { it.id in vm.favorites }, "No favorites yet.\nTap the heart on a song.", onAdd)
-                        else -> SongList(vm, accent, base.sortedByDescending { it.dateAdded }.take(50), onAddToPlaylist = onAdd)
+                        5 -> SongList(vm, accent, base.sortedByDescending { it.dateAdded }.take(50), onAddToPlaylist = onAdd)
+                        7 -> HistoryTab(vm, accent, onAdd)
+                        8 -> TopTab(vm, accent, onAdd)
+                        else -> SongList(vm, accent, base, onAddToPlaylist = onAdd)
                     }
                 }
             }
@@ -198,6 +211,25 @@ fun LibraryScreen(
             onDismiss = { showCreate = false; createFor = null }
         )
     }
+}
+
+@Composable
+private fun HistoryTab(vm: MusicViewModel, accent: Color, onAddToPlaylist: (Song) -> Unit) {
+    val songs by vm.recentlyPlayed.collectAsStateWithLifecycle()
+    Column {
+        TextButton(
+            onClick = { vm.clearHistory() },
+            enabled = songs.isNotEmpty(),
+            modifier = Modifier.padding(start = 20.dp)
+        ) { Text("Clear history") }
+        SongList(vm, accent, songs, "Nothing played yet.\nSongs you play appear here.", onAddToPlaylist)
+    }
+}
+
+@Composable
+private fun TopTab(vm: MusicViewModel, accent: Color, onAddToPlaylist: (Song) -> Unit) {
+    val songs by vm.mostPlayed.collectAsStateWithLifecycle()
+    SongList(vm, accent, songs, "No listening data yet.\nYour most played songs will appear here.", onAddToPlaylist)
 }
 
 @Composable
@@ -272,7 +304,7 @@ private fun SongRow(
 }
 
 @Composable
-private fun GroupList(groups: Map<String, List<Song>>, onOpen: (String, List<Song>) -> Unit) {
+private fun GroupList(groups: Map<String, List<Song>>, keyLabel: (String) -> String = { it }, onOpen: (String, List<Song>) -> Unit) {
     if (groups.isEmpty()) {
         Message("Nothing here.")
         return
@@ -291,7 +323,7 @@ private fun GroupList(groups: Map<String, List<Song>>, onOpen: (String, List<Son
                 ArtBox(e.value.first(), Modifier.size(52.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(e.key, color = onBg, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(keyLabel(e.key), color = onBg, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text("${e.value.size} songs", color = onBg.copy(alpha = 0.65f), fontSize = 13.sp)
                 }
             }

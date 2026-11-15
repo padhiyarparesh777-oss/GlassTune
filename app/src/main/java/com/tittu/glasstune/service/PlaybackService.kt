@@ -1,14 +1,25 @@
 package com.tittu.glasstune.service
 
 import android.app.PendingIntent
+import android.content.Context
+import android.content.ContentUris
 import android.content.Intent
+import android.net.Uri
+import android.provider.MediaStore
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.tittu.glasstune.MainActivity
 import com.tittu.glasstune.audio.AudioEffectsHub
 import com.tittu.glasstune.widget.GlassWidgetProvider
@@ -19,7 +30,21 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        val player = ExoPlayer.Builder(this)
+        // Route player PCM through the software FX chain (graphic EQ, balance, normalization).
+        val fxProcessor = AudioEffectsHub.fxProcessor
+        val renderersFactory = object : DefaultRenderersFactory(this) {
+            @OptIn(UnstableApi::class)
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean
+            ): AudioSink {
+                return DefaultAudioSink.Builder(context)
+                    .setAudioProcessors(arrayOf(fxProcessor))
+                    .build()
+            }
+        }
+        val player = ExoPlayer.Builder(this, renderersFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -51,7 +76,64 @@ class PlaybackService : MediaSessionService() {
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        session = MediaSession.Builder(this, player).setSessionActivity(openApp).build()
+        session = MediaSession.Builder(this, player)
+            .setSessionActivity(openApp)
+            .setCallback(VoiceSearchCallback(this))
+            .build()
+    }
+
+    /** Offline voice/search support: resolves assistant queries ("play <title>") against MediaStore. */
+    @OptIn(UnstableApi::class)
+    private class VoiceSearchCallback(private val context: Context) : MediaSession.Callback {
+        override fun onAddMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>
+        ): ListenableFuture<List<MediaItem>> {
+            return Futures.immediateFuture(mediaItems.mapNotNull { resolve(it) })
+        }
+
+        private fun resolve(item: MediaItem): MediaItem? {
+            // Already-resolvable items (e.g. from the app itself) pass straight through.
+            if (item.localConfiguration != null) return item
+            val query = item.requestMetadata.searchQuery
+                ?: item.mediaMetadata.title?.toString()
+                ?: return null
+            if (query.isBlank()) return null
+            val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            val projection = arrayOf(
+                MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.DURATION
+            )
+            val artBase = Uri.parse("content://media/external/audio/albumart")
+            try {
+                context.contentResolver.query(
+                    collection, projection,
+                    "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.TITLE} LIKE ?",
+                    arrayOf("%$query%"), null
+                )?.use { c ->
+                    if (c.moveToFirst()) {
+                        val id = c.getLong(0)
+                        val metadata = MediaMetadata.Builder()
+                            .setTitle(c.getString(1))
+                            .setArtist(c.getString(2)?.takeIf { it != "<unknown>" } ?: "Unknown artist")
+                            .setAlbumTitle(c.getString(3))
+                            .setArtworkUri(ContentUris.withAppendedId(artBase, c.getLong(4)))
+                            .build()
+                        return MediaItem.Builder()
+                            .setMediaId(id.toString())
+                            .setUri(ContentUris.withAppendedId(collection, id))
+                            .setMediaMetadata(metadata)
+                            .build()
+                    }
+                }
+            } catch (_: Exception) { }
+            return null
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session

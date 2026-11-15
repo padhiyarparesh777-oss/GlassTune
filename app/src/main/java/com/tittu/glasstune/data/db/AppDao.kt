@@ -50,4 +50,17 @@ abstract class AppDao {
     abstract suspend fun saveLyrics(l: LyricsEntity)
     @Query("DELETE FROM lyrics WHERE songPath = :path")
     abstract suspend fun deleteLyrics(path: String)
+
+    @Query("SELECT * FROM play_history WHERE songPath = :path")
+    abstract suspend fun getHistory(path: String): PlayHistoryEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun upsertHistory(h: PlayHistoryEntity)
+    @Query("SELECT * FROM play_history ORDER BY lastPlayed DESC LIMIT :limit")
+    abstract fun observeRecentlyPlayed(limit: Int): Flow<List<PlayHistoryEntity>>
+    @Query("SELECT * FROM play_history ORDER BY playCount DESC, lastPlayed DESC LIMIT :limit")
+    abstract fun observeMostPlayed(limit: Int): Flow<List<PlayHistoryEntity>>
+    @Query("SELECT * FROM play_history WHERE lastPlayed >= :since ORDER BY playCount DESC LIMIT :limit")
+    abstract suspend fun mostPlayedSince(since: Long, limit: Int): List<PlayHistoryEntity>
+    @Query("DELETE FROM play_history")
+    abstract suspend fun clearHistory()
 }
