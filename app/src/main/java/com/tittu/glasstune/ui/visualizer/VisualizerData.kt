@@ -1,6 +1,7 @@
 package com.tittu.glasstune.ui.visualizer
 
 import android.os.SystemClock
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.mutableIntStateOf
 import java.util.Arrays
 import kotlin.math.exp
@@ -78,8 +79,7 @@ object VisualizerData {
     var phase = 0f
 
     /** Snapshot state bumped once per animated frame. */
-    val tick = mutableIntStateOf(0)
-        private set
+    val tick: MutableIntState = mutableIntStateOf(0)
 
     @Volatile private var lastFftAt = 0L
     private var rollingBass = 0f
