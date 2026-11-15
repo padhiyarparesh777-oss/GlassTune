@@ -23,8 +23,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -94,7 +92,7 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
             ReetWallpaper(
                 vm.currentWallpaper!!,
                 darken = false,
-                modifier = Modifier.fillMaxSize().blur(3.dp).alpha(0.94f)
+                modifier = Modifier.fillMaxSize()
             )
         }
         Box(
