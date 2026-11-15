@@ -66,16 +66,16 @@ object VisualFx {
         prefs?.edit()?.let { e -> block(e); e.apply() }
     }
 
-    fun setMasterEnabled(v: Boolean) { masterEnabled = v; edit { it.putBoolean("master", v) } }
-    fun setLeftEnabled(v: Boolean) { leftEnabled = v; edit { it.putBoolean("left", v) } }
-    fun setRightEnabled(v: Boolean) { rightEnabled = v; edit { it.putBoolean("right", v) } }
-    fun setStyle(v: Int) { style = v.coerceIn(0, VisualizerStyles.LABELS.size - 1); edit { it.putInt("style", style) } }
-    fun setIntensity(v: Float) { intensity = v.coerceIn(0.3f, 1.6f); edit { it.putInt("intensity", (intensity * 100).toInt()) } }
-    fun setSpeed(v: Float) { speed = v.coerceIn(0.5f, 2f); edit { it.putInt("speed", (speed * 100).toInt()) } }
-    fun setColorPreset(v: Int) { colorPreset = v.coerceIn(0, PRESETS.size - 1); edit { it.putInt("color", colorPreset) } }
-    fun setArtworkGlow(v: Boolean) { artworkGlow = v; edit { it.putBoolean("glow", v) } }
-    fun setBeatPulse(v: Boolean) { beatPulse = v; edit { it.putBoolean("pulse", v) } }
-    fun setPerfMode(v: Boolean) { perfMode = v; edit { it.putBoolean("perf", v) } }
-    fun setStartFullscreen(v: Boolean) { startFullscreen = v; edit { it.putBoolean("fullscreen", v) } }
-    fun setMicPermission(v: Boolean) { micPermission = v; edit { it.putBoolean("mic", v) } }
+    fun updateMasterEnabled(v: Boolean) { masterEnabled = v; edit { it.putBoolean("master", v) } }
+    fun updateLeftEnabled(v: Boolean) { leftEnabled = v; edit { it.putBoolean("left", v) } }
+    fun updateRightEnabled(v: Boolean) { rightEnabled = v; edit { it.putBoolean("right", v) } }
+    fun updateStyle(v: Int) { style = v.coerceIn(0, VisualizerStyles.LABELS.size - 1); edit { it.putInt("style", style) } }
+    fun updateIntensity(v: Float) { intensity = v.coerceIn(0.3f, 1.6f); edit { it.putInt("intensity", (intensity * 100).toInt()) } }
+    fun updateSpeed(v: Float) { speed = v.coerceIn(0.5f, 2f); edit { it.putInt("speed", (speed * 100).toInt()) } }
+    fun updateColorPreset(v: Int) { colorPreset = v.coerceIn(0, PRESETS.size - 1); edit { it.putInt("color", colorPreset) } }
+    fun updateArtworkGlow(v: Boolean) { artworkGlow = v; edit { it.putBoolean("glow", v) } }
+    fun updateBeatPulse(v: Boolean) { beatPulse = v; edit { it.putBoolean("pulse", v) } }
+    fun updatePerfMode(v: Boolean) { perfMode = v; edit { it.putBoolean("perf", v) } }
+    fun updateStartFullscreen(v: Boolean) { startFullscreen = v; edit { it.putBoolean("fullscreen", v) } }
+    fun updateMicPermission(v: Boolean) { micPermission = v; edit { it.putBoolean("mic", v) } }
 }

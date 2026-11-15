@@ -93,7 +93,7 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
     val ctx = LocalContext.current
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
-            VisualFx.setMicPermission(true)
+            VisualFx.updateMicPermission(true)
             AudioEffectsHub.startVisualizerCapture(true)
         }
     }
@@ -244,7 +244,7 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                         DropdownMenuItem(
                             text = { Text(if (VisualFx.masterEnabled) "Visual effects: On" else "Visual effects: Off") },
                             leadingIcon = { Icon(Icons.Rounded.GraphicEq, null) },
-                            onClick = { menu = false; VisualFx.setMasterEnabled(!VisualFx.masterEnabled) }
+                            onClick = { menu = false; VisualFx.updateMasterEnabled(!VisualFx.masterEnabled) }
                         )
                         DropdownMenuItem(
                             text = { Text("Fullscreen visualizer") },
