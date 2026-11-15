@@ -9,6 +9,7 @@ import android.media.audiofx.PresetReverb
 import android.media.audiofx.Virtualizer
 import android.media.audiofx.Visualizer
 import kotlin.math.abs
+import com.tittu.glasstune.ui.visualizer.VisualizerData
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -78,6 +79,11 @@ object AudioEffectsHub {
         try { loud?.setTargetGain(p.getInt("loud", 0)) } catch (_: Exception) { }
         enableAll(enabled); refresh(enabled)
         restoreSoftFx(p)
+        // Restart the visualizer automatically after an audio-session change.
+        val vfxPrefs = appCtx!!.getSharedPreferences("glasstune_vfx", Context.MODE_PRIVATE)
+        if (p.getBoolean("visualizer_on", false) && vfxPrefs.getBoolean("mic", false)) {
+            startVisualizerCapture(true)
+        }
         tryReverbEnabled()
     }
     fun reapply() { appCtx?.let { attach(it, session) } }
@@ -220,7 +226,8 @@ object AudioEffectsHub {
         try {
             if (visualizer == null) {
                 val v = Visualizer(session)
-                v.captureSize = Visualizer.getCaptureSizeRange()[0]
+                // Largest capture size gives finer FFT resolution for the reactive visuals.
+                v.captureSize = Visualizer.getCaptureSizeRange()[1]
                 v.setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
                     override fun onWaveFormDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {
                         if (data == null) return
@@ -233,8 +240,10 @@ object AudioEffectsHub {
                         }
                         waveform = out
                     }
-                    override fun onFftDataCapture(v: Visualizer?, fft: ByteArray?, samplingRate: Int) { }
-                }, Visualizer.getMaxCaptureRate() / 2, true, false)
+                    override fun onFftDataCapture(v: Visualizer?, fft: ByteArray?, samplingRate: Int) {
+                        if (fft != null) VisualizerData.onFft(fft)
+                    }
+                }, Visualizer.getMaxCaptureRate(), true, true)
                 v.enabled = true
                 visualizer = v
             }
@@ -251,6 +260,7 @@ object AudioEffectsHub {
         try { visualizer?.release() } catch (_: Exception) { }
         visualizer = null
         waveform = null
+        VisualizerData.reset()
         prefs().edit().putBoolean("visualizer_on", false).apply()
         refresh()
     }
