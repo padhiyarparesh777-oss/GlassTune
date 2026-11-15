@@ -20,6 +20,17 @@ class GlassWidgetProvider : AppWidgetProvider() {
         refresh(context)
     }
 
+    /** Rebuild the widget after the launcher changes its width or height. */
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        manager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle
+    ) {
+        super.onAppWidgetOptionsChanged(context, manager, appWidgetId, newOptions)
+        refresh(context)
+    }
+
     companion object {
         const val ACTION_PLAY_PAUSE = "com.tittu.glasstune.widget.PLAY_PAUSE"
         const val ACTION_NEXT = "com.tittu.glasstune.widget.NEXT"
