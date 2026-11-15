@@ -35,14 +35,9 @@ private data class LibraryTab(val index: Int, val label: String)
 
 private val tabs = listOf(
     LibraryTab(0, "Songs"),
-    LibraryTab(1, "Albums"),
-    LibraryTab(2, "Artists"),
-    LibraryTab(3, "Folder"),
-    LibraryTab(4, "Favorites"),
-    LibraryTab(5, "Recent"),
-    LibraryTab(6, "Playlists"),
-    LibraryTab(7, "History"),
-    LibraryTab(8, "Top")
+    LibraryTab(1, "Recent"),
+    LibraryTab(2, "Favourite"),
+    LibraryTab(3, "Top")
 )
 
 @Composable
@@ -118,12 +113,20 @@ fun LibraryScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(tabs) { t -> PillChip(t.label, vm.tab == t.index, accent) { vm.tab = t.index } }
+                    items(tabs) { t -> PillChip(t.label, vm.tab == t.index, accent) { vm.selectLibraryTab(t.index) } }
                     item {
                         var sortMenu by remember { mutableStateOf(false) }
                         Box {
                             PillChip("Sort By", sortMenu, accent) { sortMenu = true }
-                            DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }, modifier = Modifier.widthIn(min = 190.dp)) {
+                            DropdownMenu(
+                                expanded = sortMenu,
+                                onDismissRequest = { sortMenu = false },
+                                modifier = Modifier.widthIn(min = 190.dp).glass(RoundedCornerShape(18.dp)),
+                                shape = RoundedCornerShape(18.dp),
+                                containerColor = Color.Transparent,
+                                tonalElevation = 0.dp,
+                                shadowElevation = 10.dp
+                            ) {
                                 SortOrder.entries.forEach { order ->
                                     DropdownMenuItem(
                                         text = {
@@ -167,10 +170,9 @@ fun LibraryScreen(
                         1 -> GroupList(base.groupBy { it.album }) { k, v -> group = k to v }
                         2 -> GroupList(base.groupBy { it.artist }) { k, v -> group = k to v }
                         3 -> GroupList(base.groupBy { it.folderPath.ifEmpty { "Unknown folder" } }, keyLabel = { it.substringAfterLast('/').ifEmpty { "Unknown folder" } }) { k, v -> group = k to v }
-                        4 -> SongList(vm, accent, base.filter { it.id in vm.favorites }, "No favorites yet.\nTap the heart on a song.", onAdd)
-                        5 -> SongList(vm, accent, base.sortedByDescending { it.dateAdded }.take(50), onAddToPlaylist = onAdd)
-                        7 -> HistoryTab(vm, accent, onAdd)
-                        8 -> TopTab(vm, accent, onAdd)
+                        1 -> SongList(vm, accent, base.sortedByDescending { it.dateAdded }.take(50), onAddToPlaylist = onAdd)
+                        2 -> SongList(vm, accent, base.filter { it.id in vm.favorites }, "No favourites yet.\nTap the heart on a song.", onAdd)
+                        3 -> TopTab(vm, accent, onAdd)
                         else -> SongList(vm, accent, base, onAddToPlaylist = onAdd)
                     }
                 }

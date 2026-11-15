@@ -96,8 +96,10 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     var songs by mutableStateOf<List<Song>>(emptyList()); private set
     var loading by mutableStateOf(false); private set
     var query by mutableStateOf("")
-    var sort by mutableStateOf(SortOrder.TITLE_ASC)
-    var tab by mutableStateOf(0)
+    var sort by mutableStateOf(
+        SortOrder.entries.getOrNull(prefs.getInt("sort_order", 0)) ?: SortOrder.TITLE_ASC
+    ); private set
+    var tab by mutableStateOf(prefs.getInt("library_tab", 0).coerceIn(0, 3)); private set
 
     // Marvel wallpaper collection (same AUTO/FIXED behaviour as Reet Music Player)
     val marvelWallpapers: List<String> = app.assets.list("backgrounds")?.filter { it.endsWith(".jpg", true) || it.endsWith(".png", true) || it.endsWith(".webp", true) }?.sorted().orEmpty()
@@ -445,6 +447,12 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateSortOrder(order: SortOrder) {
         sort = order
+        prefs.edit().putInt("sort_order", order.ordinal).apply()
+    }
+
+    fun selectLibraryTab(index: Int) {
+        tab = index.coerceIn(0, 3)
+        prefs.edit().putInt("library_tab", tab).apply()
     }
 
     fun updateHideShortAudio(enabled: Boolean) {
