@@ -36,6 +36,7 @@ import com.tittu.glasstune.data.db.PlaylistEntity
 import com.tittu.glasstune.data.db.PlaylistInfo
 import com.tittu.glasstune.data.db.PlaylistSongEntity
 import com.tittu.glasstune.service.PlaybackService
+import com.tittu.glasstune.ui.visualizer.VisualFx
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -209,6 +210,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        VisualFx.init(app)
         connect()
         // Auto-refresh the library when MediaStore changes (new/deleted/renamed files).
         getApplication<Application>().contentResolver.registerContentObserver(

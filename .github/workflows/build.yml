@@ -2,7 +2,7 @@ name: Build GlassTune APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, feature/resizable-home-widget, feature/visualizer-2.0 ]
   workflow_dispatch:
 
 permissions:

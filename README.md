@@ -23,6 +23,12 @@ Compose BOM 2024.09.00, Media3 1.4.1, Coil 2.7.0, Room 2.6.1.
 - Sleep timer with 10 s fade-out, playback speed (0.75x–2x)
 - Home-screen widget: play/pause, next, previous, favorite, album art (decoded off the main thread)
 - Glass UI, Frosted Dark / AMOLED Black / Light themes, dynamic accent from artwork, Marvel wallpapers
+- Real-time audio-reactive visuals: 10 visualizer styles (neon spectrum, liquid wave, particles, lasers,
+  aurora, LED EQ, electric pulse, glass wave, dual side bars, minimal waveform) flowing on both sides of
+  Now Playing, driven by true FFT analysis of the playing audio (mic permission used only for capture)
+- Beat-reactive album artwork (glow, energy ring, subtle scale), immersive fullscreen visualizer mode
+- Visual Effects settings: master/left/right toggles, style, intensity, speed, color presets,
+  artwork glow, beat pulse, performance mode — all persisted
 - Permission screen with denied state + settings shortcut
 
 ## Known limitations

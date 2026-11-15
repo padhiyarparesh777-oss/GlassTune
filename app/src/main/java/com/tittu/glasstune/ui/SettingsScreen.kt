@@ -35,6 +35,9 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.os.Build
 import android.widget.Toast
+import com.tittu.glasstune.audio.AudioEffectsHub
+import com.tittu.glasstune.ui.visualizer.VisualFx
+import com.tittu.glasstune.ui.visualizer.VisualizerStyles
 import com.tittu.glasstune.widget.GlassWidgetProvider
 
 @Composable
@@ -79,6 +82,106 @@ fun SettingsScreen(vm: MusicViewModel, accent: Color, onClose: () -> Unit, onOpe
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AccentColors.forEachIndexed { i, c ->
                     Box(Modifier.size(36.dp).clip(CircleShape).background(c).border(if (vm.accentIndex == i) 3.dp else 0.dp, onBg, CircleShape).clickable { vm.setAccent(i) })
+                }
+            }
+        }
+
+        GlassSection("Visual Effects") {
+            val micGranted = hasRecordAudio()
+            val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (granted) {
+                    VisualFx.setMicPermission(true)
+                    AudioEffectsHub.startVisualizerCapture(true)
+                }
+            }
+            val swColors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.Black)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Master visualizer", color = onBg, fontWeight = FontWeight.Medium)
+                    Text("Audio-reactive effects on both sides of the Now Playing screen", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                }
+                Switch(checked = VisualFx.masterEnabled, onCheckedChange = { VisualFx.setMasterEnabled(it) }, colors = swColors)
+            }
+            if (VisualFx.masterEnabled) {
+                if (!micGranted) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Live visuals need microphone access (used only for audio capture, never recorded).",
+                            color = onBg.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { micLauncher.launch(android.Manifest.permission.RECORD_AUDIO) }) { Text("Allow") }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Left side effects", color = onBg.copy(alpha = 0.85f), fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Switch(checked = VisualFx.leftEnabled, onCheckedChange = { VisualFx.setLeftEnabled(it) }, colors = swColors)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Right side effects", color = onBg.copy(alpha = 0.85f), fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Switch(checked = VisualFx.rightEnabled, onCheckedChange = { VisualFx.setRightEnabled(it) }, colors = swColors)
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("Visualizer style", color = onBg.copy(alpha = 0.75f), fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(VisualizerStyles.LABELS.size) { i ->
+                        PillChip(VisualizerStyles.LABELS[i], VisualFx.style == i, accent) { VisualFx.setStyle(i) }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("Intensity " + (VisualFx.intensity * 100).toInt() + "%", color = onBg.copy(alpha = 0.75f), fontSize = 13.sp)
+                Slider(
+                    value = VisualFx.intensity,
+                    onValueChange = { VisualFx.setIntensity(it) },
+                    valueRange = 0.3f..1.6f,
+                    colors = SliderDefaults.colors(thumbColor = accent, activeTrackColor = accent, inactiveTrackColor = onBg.copy(alpha = 0.2f))
+                )
+                Spacer(Modifier.height(6.dp))
+                Text("Animation speed " + (VisualFx.speed * 100).toInt() + "%", color = onBg.copy(alpha = 0.75f), fontSize = 13.sp)
+                Slider(
+                    value = VisualFx.speed,
+                    onValueChange = { VisualFx.setSpeed(it) },
+                    valueRange = 0.5f..2f,
+                    colors = SliderDefaults.colors(thumbColor = accent, activeTrackColor = accent, inactiveTrackColor = onBg.copy(alpha = 0.2f))
+                )
+                Spacer(Modifier.height(12.dp))
+                Text("Colors", color = onBg.copy(alpha = 0.75f), fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(VisualFx.PRESETS.size) { i ->
+                        PillChip(VisualFx.PRESETS[i].label, VisualFx.colorPreset == i, accent) { VisualFx.setColorPreset(i) }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Artwork glow & energy ring", color = onBg, fontWeight = FontWeight.Medium)
+                        Text("Neon halo and rotating ring around the album art", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                    }
+                    Switch(checked = VisualFx.artworkGlow, onCheckedChange = { VisualFx.setArtworkGlow(it) }, colors = swColors)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Beat-synced artwork pulse", color = onBg, fontWeight = FontWeight.Medium)
+                        Text("Album art gently scales on every detected beat", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                    }
+                    Switch(checked = VisualFx.beatPulse, onCheckedChange = { VisualFx.setBeatPulse(it) }, colors = swColors)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Full-screen visualizer mode", color = onBg, fontWeight = FontWeight.Medium)
+                        Text("Open Now Playing straight into the immersive mode", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                    }
+                    Switch(checked = VisualFx.startFullscreen, onCheckedChange = { VisualFx.setStartFullscreen(it) }, colors = swColors)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Performance mode", color = onBg, fontWeight = FontWeight.Medium)
+                        Text("Fewer particles and glow layers to save battery", color = onBg.copy(alpha = 0.65f), fontSize = 12.sp)
+                    }
+                    Switch(checked = VisualFx.perfMode, onCheckedChange = { VisualFx.setPerfMode(it) }, colors = swColors)
                 }
             }
         }

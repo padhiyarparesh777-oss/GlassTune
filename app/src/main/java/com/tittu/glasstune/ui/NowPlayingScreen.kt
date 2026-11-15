@@ -1,9 +1,18 @@
 package com.tittu.glasstune.ui
 
 import android.content.Intent
+import android.content.Context
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -19,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.Alignment
@@ -39,7 +49,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
+import com.tittu.glasstune.audio.AudioEffectsHub
 import com.tittu.glasstune.data.LrcParser
+import com.tittu.glasstune.ui.visualizer.ArtworkEnergyRing
+import com.tittu.glasstune.ui.visualizer.FullscreenVisualizer
+import com.tittu.glasstune.ui.visualizer.Side
+import com.tittu.glasstune.ui.visualizer.VisualFx
+import com.tittu.glasstune.ui.visualizer.VisualizerData
+import com.tittu.glasstune.ui.visualizer.VisualizerStrip
 
 private enum class Panel { ART, QUEUE, LYRICS }
 
@@ -74,6 +91,12 @@ fun MiniPlayer(vm: MusicViewModel, accent: Color, onClick: () -> Unit, modifier:
 fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolean = true, onClose: () -> Unit, onOpenEq: () -> Unit) {
     BackHandler(onBack = onClose)
     val ctx = LocalContext.current
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            VisualFx.setMicPermission(true)
+            AudioEffectsHub.startVisualizerCapture(true)
+        }
+    }
     val song = vm.currentSong
     val fav = song != null && song.id in vm.favorites
     var panel by remember { mutableStateOf(Panel.ART) }
@@ -83,6 +106,32 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
     var showInfo by remember { mutableStateOf(false) }
     var showSleep by remember { mutableStateOf(false) }
     var artworkDrag by remember { mutableFloatStateOf(0f) }
+    var fullscreen by remember { mutableStateOf(false) }
+    val powerSave = remember {
+        (ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isPowerSaveMode == true
+    }
+    val reducedMotion = remember {
+        Settings.Global.getFloat(ctx.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }
+    val lowFx = VisualFx.perfMode || powerSave || reducedMotion
+
+    // Master animation loop: advances band envelopes, beat decay and the shared
+    // phase once per frame; every reactive surface subscribes via VisualizerData.tick.
+    LaunchedEffect(VisualFx.masterEnabled) {
+        if (!VisualFx.masterEnabled) return@LaunchedEffect
+        var last = 0L
+        while (true) {
+            withFrameNanos { now ->
+                if (last != 0L) {
+                    VisualizerData.animate(((now - last) / 1_000_000_000f).coerceIn(0f, 0.05f), VisualFx.speed)
+                }
+                last = now
+            }
+        }
+    }
+    LaunchedEffect(Unit) { if (VisualFx.startFullscreen) fullscreen = true }
+
+    BackHandler(enabled = fullscreen) { fullscreen = false }
     val artworkOffset by animateFloatAsState(
         targetValue = artworkDrag,
         animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
@@ -108,6 +157,24 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                 )
             )
         )
+
+        // ---- Live audio-reactive visualizer strips on the left and right edges ----
+        if (VisualFx.masterEnabled) {
+            if (VisualFx.leftEnabled) {
+                VisualizerStrip(
+                    accent, Side.LEFT,
+                    Modifier.align(Alignment.CenterStart).fillMaxHeight().fillMaxWidth(0.26f),
+                    lowFx = lowFx
+                )
+            }
+            if (VisualFx.rightEnabled) {
+                VisualizerStrip(
+                    accent, Side.RIGHT,
+                    Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.26f),
+                    lowFx = lowFx
+                )
+            }
+        }
 
         Column(
             Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 12.dp),
@@ -175,6 +242,16 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text(if (VisualFx.masterEnabled) "Visual effects: On" else "Visual effects: Off") },
+                            leadingIcon = { Icon(Icons.Rounded.GraphicEq, null) },
+                            onClick = { menu = false; VisualFx.setMasterEnabled(!VisualFx.masterEnabled) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Fullscreen visualizer") },
+                            leadingIcon = { Icon(Icons.Rounded.Fullscreen, null) },
+                            onClick = { menu = false; fullscreen = true }
+                        )
+                        DropdownMenuItem(
                             text = { Text(if (vm.sleepMinutes > 0) "Sleep timer (${vm.sleepMinutes}m)" else "Sleep timer") },
                             leadingIcon = { Icon(Icons.Rounded.Timer, null) },
                             onClick = { menu = false; showSleep = true }
@@ -237,6 +314,11 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                             .graphicsLayer {
                                 translationX = artworkOffset
                                 rotationZ = artworkOffset / 55f
+                                if (VisualFx.beatPulse && !reducedMotion && VisualizerData.isFresh()) {
+                                    val s = 1f + 0.05f * VisualizerData.beat
+                                    scaleX = s
+                                    scaleY = s
+                                }
                             }
                             .pointerInput(song?.id) {
                                 detectHorizontalDragGestures(
@@ -260,10 +342,17 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                     ) {
                         Icon(Icons.Rounded.MusicNote, null, tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(72.dp))
                         if (song != null) {
-                            AsyncImage(
-                                model = song.artUri, contentDescription = null, contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(26.dp))
-                            )
+                            if (VisualFx.artworkGlow) ArtworkEnergyRing(accent, Modifier.matchParentSize())
+                            AnimatedContent(
+                                targetState = song.artUri,
+                                transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                                label = "artwork"
+                            ) { uri ->
+                                AsyncImage(
+                                    model = uri, contentDescription = null, contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(26.dp))
+                                )
+                            }
                         }
                     }
                 }
@@ -345,6 +434,20 @@ fun NowPlayingScreen(vm: MusicViewModel, accent: Color, dynamicWallpaper: Boolea
                     Text(if (vm.sleepMinutes == 0) "Sleep" else "${vm.sleepMinutes}m", color = Color.White)
                 }
             }
+            if (VisualFx.masterEnabled && !hasRecordAudio()) {
+                TextButton(onClick = { micLauncher.launch(android.Manifest.permission.RECORD_AUDIO) }) {
+                    Icon(Icons.Rounded.GraphicEq, null, tint = Color.White)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Allow mic for live visualizer", color = Color.White, fontSize = 12.sp)
+                }
+            }
+        }
+        AnimatedVisibility(
+            visible = fullscreen,
+            enter = fadeIn(tween(260)),
+            exit = fadeOut(tween(200))
+        ) {
+            FullscreenVisualizer(vm, accent, onExit = { fullscreen = false })
         }
     }
 
